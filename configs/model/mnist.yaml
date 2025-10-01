@@ -1,29 +1,11 @@
+defaults:
+  - /transforms/base@forward_fn.transforms.net: model_forward
+  - /transforms/base@forward_fn.transforms.argmax: argmax
+
 _target_: src.models.base_module.BaseLitModule
 
 forward_fn:
   _target_: src.transforms.base.TransformCompose
-  transforms:
-    net:
-      _target_: src.transforms.base.TransformWrapper
-      transform_fn:
-        _target_: src.models.components.simple_dense_net.SimpleDenseNet
-        input_size: 784
-        lin1_size: 64
-        lin2_size: 128
-        lin3_size: 64
-        output_size: 10
-      mapping:
-        image: x
-      new_key: logits
-    argmax:
-      _target_: src.transforms.base.TransformWrapper
-      transform_fn:
-        _target_: torch.argmax
-        _partial_: true
-        dim: -1
-      mapping:
-        logits: input
-      new_key: predictions
 
 criterion:
   ce:
