@@ -9,6 +9,11 @@ from src.transforms.base import BaseTransform
 
 
 class HFDataModule(LightningDataModule):
+    """LightningDataModule for datasets provided as a Hugging Face DatasetDict.
+
+    Handles splitting the training split into train/validation sets and exposes
+    ready-to-use dataloaders configured via ``dataloader_kwargs``.
+    """
     def __init__(
         self,
         hf_dict_dataset: DatasetDict,
@@ -40,6 +45,13 @@ class HFDataModule(LightningDataModule):
             self.hf_dict_dataset.set_transform(transform, output_all_columns=True)
 
     def setup(self, stage: Optional[str] = None) -> None:
+        """Prepare datasets and adjust dataloader settings for the current stage.
+
+        - Divides batch size by world size when running distributed.
+        - Splits the HF dataset into train/val/test on first call.
+
+        :param stage: Optional Lightning stage ("fit", "test", "predict").
+        """
         # Divide batch size by the number of devices.
         if self.trainer is not None:
             batch_size = self.dataloader_kwargs.get("batch_size", 1)

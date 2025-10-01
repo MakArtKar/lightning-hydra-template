@@ -7,6 +7,13 @@ from torchmetrics.classification.accuracy import Accuracy
 
 
 class BaseLitModule(LightningModule):
+    """Generic LightningModule wrapping a forward module, losses, and metrics.
+
+    This module orchestrates a provided forward function, a configurable set of
+    loss functions (with input-to-argument mappings and coefficients), and
+    metrics (with stage selection and input mappings). It also tracks a
+    validation metric according to a specified mode (min/max).
+    """
     def __init__(
         self,
         forward_fn: torch.nn.Module,
@@ -19,6 +26,26 @@ class BaseLitModule(LightningModule):
         scheduler: torch.optim.lr_scheduler,
         compile: bool,
     ) -> None:
+        """Initialize a BaseLitModule.
+
+        :param forward_fn: The callable used as a forward method.
+        :param criterion: Mapping from loss name to a tuple of (input mapping,
+            loss module). 
+            * The input mapping maps batch keys to loss argument names.
+            * The loss module - torch.nn.Module loss class
+        :param criterion_coefs: Coefficients per loss to combine into total loss.
+        :param metrics: Mapping from metric name to a tuple of (input mapping, stages, metric instance).
+            * The input mapping maps batch keys to metric argument names.
+            * Stages is a list among ["train","val","test"] specifying stages on
+                which metric should be calculated.
+            * The metric instance - torch.nn.Module metric class
+        :param tracked_metric_mode: How to track the best value of the chosen validation metric, either
+            "max" or "min".
+        :param tracked_metric_name: The metric name (without stage prefix) to track on validation.
+        :param optimizer: Optimizer factory (callable) configured via Hydra.
+        :param scheduler: LR scheduler factory (callable) configured via Hydra.
+        :param compile: If True, compile the forward function during fit.
+        """
         super().__init__()
 
         # this line allows to access init params with 'self.hparams' attribute
@@ -79,6 +106,11 @@ class BaseLitModule(LightningModule):
         self.val_best.reset()
 
     def _calculate_loss(self, batch: Mapping[str, Any]) -> Mapping[str, torch.Tensor]:
+        """Calculate individual losses and aggregate into a total loss.
+
+        :param batch: Model batch dictionary containing all required inputs.
+        :return: Mapping with individual losses by name and a "total" key.
+        """
         total_loss = 0.
         losses = {}
         for criterion_name in self.criterion_names:
@@ -89,22 +121,43 @@ class BaseLitModule(LightningModule):
         return losses
 
     def _log_losses(self, losses: Mapping[str, torch.Tensor], stage: Literal["train", "val", "test"]) -> None:
+        """Log per-criterion and total losses for a given stage.
+
+        :param losses: Mapping returned by ``_calculate_loss``.
+        :param stage: One of "train", "val", or "test".
+        """
         for criterion_name in self.criterion_names:
             self.log(f"{stage}/{criterion_name}_loss", losses[criterion_name], on_step=True, on_epoch=True, prog_bar=True, sync_dist=True)
         self.log(f"{stage}/loss", losses["total"], on_step=True, on_epoch=True, prog_bar=True, sync_dist=True)
 
     def _update_metrics(self, batch: Mapping[str, Any], stage: Literal["train", "val", "test"]) -> None:
+        """Update configured metrics for the specified stage.
+
+        :param batch: Model batch dictionary containing all required inputs.
+        :param stage: Stage to update metrics for: "train", "val", or "test".
+        """
         for metric_name in getattr(self, f"{stage}_metric_names"):
             filtered_batch = {new_key: batch[old_key] for old_key, new_key in getattr(self, f"{stage}_{metric_name}_mapping").items()}
             getattr(self, f"{stage}_{metric_name}")(**filtered_batch)
         
     def _log_metrics(self, stage: Literal["train", "val", "test"]) -> None:
+        """Log all configured metrics for the specified stage.
+
+        :param stage: Stage to log metrics for: "train", "val", or "test".
+        """
         for metric_name in getattr(self, f"{stage}_metric_names"):
             self.log(f"{stage}/{metric_name}", getattr(self, f"{stage}_{metric_name}"), on_step=True, on_epoch=True, prog_bar=True, sync_dist=True)
 
     def model_step(
         self, batch: Mapping[str, Any], stage: Literal["train", "val", "test"]
     ) -> Mapping[str, Any]:
+        """Run forward pass, compute losses, update and log metrics for a stage.
+
+        :param batch: Batch dictionary before forward; will be augmented by forward.
+        :param stage: "train", "val", or "test".
+        :return: Mapping with keys: "loss" (tensor), "batch" (augmented batch),
+            and "losses" (mapping of individual losses including "total").
+        """
         batch = self.forward_fn(batch)
 
         losses = self._calculate_loss(batch)
@@ -116,14 +169,26 @@ class BaseLitModule(LightningModule):
 
     def training_step(
         self, batch: Mapping[str, Any], batch_idx: int
-    ) -> torch.Tensor:
+    ) -> Mapping[str, Any]:
+        """Lightning training step.
+
+        :param batch: Input batch.
+        :param batch_idx: Batch index (unused).
+        :return: Total loss tensor used for optimization.
+        """
         return self.model_step(batch, "train")
 
     def on_train_epoch_end(self) -> None:
         "Lightning hook that is called when a training epoch ends."
         pass
 
-    def validation_step(self, batch: Mapping[str, Any], batch_idx: int) -> None:
+    def validation_step(self, batch: Mapping[str, Any], batch_idx: int) -> Mapping[str, Any]:
+        """Lightning validation step.
+
+        :param batch: Input batch.
+        :param batch_idx: Batch index (unused).
+        :return: Step output mapping from ``model_step``.
+        """
         return self.model_step(batch, "val")
 
     def on_validation_epoch_end(self) -> None:
@@ -134,7 +199,13 @@ class BaseLitModule(LightningModule):
         # otherwise metric would be reset by lightning after each epoch
         self.log("val/best", self.val_best.compute(), on_epoch=True, prog_bar=True, sync_dist=True)
 
-    def test_step(self, batch: Mapping[str, Any], batch_idx: int) -> None:
+    def test_step(self, batch: Mapping[str, Any], batch_idx: int) -> Mapping[str, Any]:
+        """Lightning test step.
+
+        :param batch: Input batch.
+        :param batch_idx: Batch index (unused).
+        :return: Step output mapping from ``model_step``.
+        """
         return self.model_step(batch, "test")
 
     def on_test_epoch_end(self) -> None:
