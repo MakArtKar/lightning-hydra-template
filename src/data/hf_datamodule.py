@@ -1,16 +1,19 @@
-from typing import Any, Dict, Optional, Tuple
+from typing import Any, Dict, Optional, Tuple, Mapping
 
 import torch
 from lightning import LightningDataModule
 from torch.utils.data import ConcatDataset, DataLoader, random_split
-from datasets import DictDataset, Dataset
+from datasets import DatasetDict, Dataset
+
+from src.transforms.base import BaseTransform
 
 
 class HFDataModule(LightningDataModule):
     def __init__(
         self,
-        hf_dict_dataset: DictDataset,
+        hf_dict_dataset: DatasetDict,
         val_ratio: float = 0.1,
+        transform: Mapping[str, BaseTransform] = {},
         dataloader_kwargs: dict[str, Any] = {},
     ) -> None:
         """Initialize a `HFDataModule`.
@@ -32,6 +35,9 @@ class HFDataModule(LightningDataModule):
         self.data_train: Optional[Dataset] = None
         self.data_val: Optional[Dataset] = None
         self.data_test: Optional[Dataset] = None
+
+        if transform is not None:
+            self.hf_dict_dataset.set_transform(transform, output_all_columns=True)
 
     def setup(self, stage: Optional[str] = None) -> None:
         # Divide batch size by the number of devices.

@@ -13,8 +13,8 @@ class BaseLitModule(LightningModule):
         criterion: Mapping[str, tuple[Mapping[str, str], torch.nn.Module]],
         criterion_coefs: Mapping[str, float],
         metrics: Mapping[str, tuple[Mapping[str, str], list[str], Metric]],
-        best_metric_mode: Literal["max", "min"],
-        best_metric_name: str,
+        tracked_metric_mode: Literal["max", "min"],
+        tracked_metric_name: str,
         optimizer: torch.optim.Optimizer,
         scheduler: torch.optim.lr_scheduler,
         compile: bool,
@@ -51,8 +51,8 @@ class BaseLitModule(LightningModule):
                 setattr(self, f"{stage}_{metric_name}", metric.clone())
 
         # for tracking best so far validation accuracy
-        self.val_best = MaxMetric() if best_metric_mode == "max" else MinMetric()
-        self.best_metric_name = best_metric_name
+        self.val_best = MaxMetric() if tracked_metric_mode == "max" else MinMetric()
+        self.tracked_metric_name = tracked_metric_name
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         """Perform a forward pass through the model `self.net`.
@@ -73,7 +73,7 @@ class BaseLitModule(LightningModule):
             getattr(self, f"val_{criterion_name}_loss").reset()
         getattr(self, f"val_loss").reset()
 
-        for metric_name in self.metric_names:
+        for metric_name in self.val_metric_names:
             getattr(self, f"val_{metric_name}").reset()
 
         self.val_best.reset()
@@ -82,7 +82,7 @@ class BaseLitModule(LightningModule):
         total_loss = 0.
         losses = {}
         for criterion_name in self.criterion_names:
-            filtered_batch = {new_key: batch[old_key] for old_key, new_key in self.criterion_mapping[criterion_name]}
+            filtered_batch = {new_key: batch[old_key] for old_key, new_key in getattr(self, f"{criterion_name}_mapping").items()}
             losses[criterion_name] = getattr(self, criterion_name)(**filtered_batch)
             total_loss = total_loss + self.criterion_coefs[criterion_name] * losses[criterion_name]
         losses["total"] = total_loss
@@ -90,17 +90,17 @@ class BaseLitModule(LightningModule):
 
     def _log_losses(self, losses: Mapping[str, torch.Tensor], stage: Literal["train", "val", "test"]) -> None:
         for criterion_name in self.criterion_names:
-            self.log(f"{stage}/{criterion_name}_loss", losses[criterion_name], on_step=False, on_epoch=True, prog_bar=True, sync_dist=True)
-        self.log(f"{stage}/loss", losses["total"], on_step=False, on_epoch=True, prog_bar=True, sync_dist=True)
+            self.log(f"{stage}/{criterion_name}_loss", losses[criterion_name], on_step=True, on_epoch=True, prog_bar=True, sync_dist=True)
+        self.log(f"{stage}/loss", losses["total"], on_step=True, on_epoch=True, prog_bar=True, sync_dist=True)
 
     def _update_metrics(self, batch: Mapping[str, Any], stage: Literal["train", "val", "test"]) -> None:
         for metric_name in getattr(self, f"{stage}_metric_names"):
-            filtered_batch = {new_key: batch[old_key] for old_key, new_key in getattr(self, f"{stage}_{metric_name}_mapping")}
+            filtered_batch = {new_key: batch[old_key] for old_key, new_key in getattr(self, f"{stage}_{metric_name}_mapping").items()}
             getattr(self, f"{stage}_{metric_name}")(**filtered_batch)
         
     def _log_metrics(self, stage: Literal["train", "val", "test"]) -> None:
         for metric_name in getattr(self, f"{stage}_metric_names"):
-            self.log(f"{stage}/{metric_name}", getattr(self, f"{stage}_{metric_name}"), on_step=False, on_epoch=True, prog_bar=True, sync_dist=True)
+            self.log(f"{stage}/{metric_name}", getattr(self, f"{stage}_{metric_name}"), on_step=True, on_epoch=True, prog_bar=True, sync_dist=True)
 
     def model_step(
         self, batch: Mapping[str, Any], stage: Literal["train", "val", "test"]
@@ -128,11 +128,11 @@ class BaseLitModule(LightningModule):
 
     def on_validation_epoch_end(self) -> None:
         "Lightning hook that is called when a validation epoch ends."
-        best_metric_value = getattr(self, f"val_{self.best_metric_name}").compute()  # get current val acc
-        getattr(self, f"val_{self.best_metric_name}")(best_metric_value)  # update best so far val acc
-        # log `self.val_{self.best_metric_name}` as a value through `.compute()` method, instead of as a metric object
+        tracked_metric_value = getattr(self, f"val_{self.tracked_metric_name}").compute()  # get current val tracked
+        self.val_best(tracked_metric_value)  # update best so far val tracked metric
+        # log `self.val_best` as a value through `.compute()` method, instead of as a metric object
         # otherwise metric would be reset by lightning after each epoch
-        self.log("val/best", getattr(self, f"val_{self.best_metric_name}").compute(), sync_dist=True, prog_bar=True)
+        self.log("val/best", self.val_best.compute(), on_epoch=True, prog_bar=True, sync_dist=True)
 
     def test_step(self, batch: Mapping[str, Any], batch_idx: int) -> None:
         return self.model_step(batch, "test")
