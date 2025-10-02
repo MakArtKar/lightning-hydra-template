@@ -4,4 +4,4 @@ accuracy:
   - [train, val, test]
   - _target_: torchmetrics.Accuracy
     task: multiclass
-    num_classes: ${params.num_classes}
+    num_classes: ${params.data.num_classes}

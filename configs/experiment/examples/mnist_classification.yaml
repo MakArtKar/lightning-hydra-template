@@ -5,7 +5,6 @@
 
 defaults:
   - /tasks: [classification, image]
-  - /data: mnist
 
 # all parameters below will be merged with parameters from default configurations set above
 # this allows you to overwrite only specified parameters
@@ -26,24 +25,10 @@ params:
     lin1_size: 128
     lin2_size: 256
     lin3_size: 64
-    output_size: ${params.net.num_classes}
-  num_classes: 10
-
-model:
-  optimizer:
-    _target_: torch.optim.Adam
-    _partial_: true
-    lr: 0.002
-    weight_decay: 0.0
-
-  scheduler:
-    _target_: torch.optim.lr_scheduler.ReduceLROnPlateau
-    _partial_: true
-    mode: min
-    factor: 0.1
-    patience: 10
-
-  compile: false
+    output_size: ${params.data.num_classes}
+  data:
+    num_classes: 10
+    hf_dataset_name: ylecun/mnist
 
 data:
   dataloader_kwargs:

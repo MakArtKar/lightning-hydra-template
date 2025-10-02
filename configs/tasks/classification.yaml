@@ -7,8 +7,6 @@ defaults:
   - /model/metrics: accuracy
 
 model:
-  _target_: src.models.base_module.BaseLitModule
-
   forward_fn:
     _target_: src.transforms.base.TransformCompose
 
