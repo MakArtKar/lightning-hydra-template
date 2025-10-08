@@ -1,6 +1,7 @@
 # @package _global_
 
 defaults:
+  - _self_
   - /transforms/image@data.transform.transforms.to_tensor: to_tensor
   - /transforms/image@data.transform.transforms.normalize: normalize
 
@@ -8,3 +9,8 @@ data:
   transform:
     _target_: src.transforms.base.TransformCompose
 
+    transforms:
+      to_tensor:
+        mapping:
+          image: pic
+        new_key: image

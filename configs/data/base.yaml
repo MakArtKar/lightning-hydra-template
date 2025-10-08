@@ -6,7 +6,7 @@ hf_dict_dataset:
 
 val_ratio: 0.1
 
-dataloader_kwargs:
-  batch_size: 128
-  num_workers: 8
-  pin_memory: True
+batch_size: 128
+num_workers: 8
+pin_memory: True
+persistent_workers: True

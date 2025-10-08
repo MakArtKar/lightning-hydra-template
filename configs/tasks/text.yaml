@@ -1,0 +1,27 @@
+# @package _global_
+
+defaults:
+  - /transforms/text@data.collate_fn.transforms.tokenize: tokenize
+
+data:
+  collate_fn:
+    _target_: src.transforms.base.TransformCompose
+    transforms:
+      tokenize:
+        _target_: src.transforms.base.TransformWrapper
+        new_key:
+        transform_kwargs:
+          padding: true
+          return_tensors: "np"
+        output_format: list
+      
+      default_collate:
+        _target_: src.transforms.base.TransformWrapper
+        transform_fn:
+          _target_: torch.utils.data.default_collate
+          _partial_: true
+        input_format: list
+
+params:
+  data:
+    tokenizer: ??? # override in parent config

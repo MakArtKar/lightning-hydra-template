@@ -18,20 +18,20 @@ class HFDataModule(LightningDataModule):
         self,
         hf_dict_dataset: DatasetDict,
         val_ratio: float = 0.1,
-        transform: Mapping[str, BaseTransform] = {},
-        dataloader_kwargs: dict[str, Any] = {},
+        transform: Mapping[str, BaseTransform] | None = None,
+        **dataloader_kwargs: dict[str, Any],
     ) -> None:
         """Initialize a `HFDataModule`.
 
         :param hf_dict_dataset: The Hugging Face DictDataset.
         :param val_ratio: The ratio of the validation set. Defaults to `0.1`.
-        :param dataloader_kwargs: The keyword arguments for the dataloader. Defaults to `{}`.
+        :param dataloader_kwargs: The keyword arguments for the dataloader.
         """
         super().__init__()
 
         # this line allows to access init params with 'self.hparams' attribute
         # also ensures init params will be stored in ckpt
-        self.save_hyperparameters(logger=False)
+        self.save_hyperparameters(logger=False, ignore=dataloader_kwargs.keys())
 
         self.hf_dict_dataset = hf_dict_dataset
         self.val_ratio = val_ratio
