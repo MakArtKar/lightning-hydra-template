@@ -1,7 +1,7 @@
 # @package _global_
 
 defaults:
-  - /transforms/base@model.forward_fn.transforms.net: model_forward
+  - _self_
   - /transforms/base@model.forward_fn.transforms.argmax: argmax
   - /model/criterion: cross_entropy
   - /model/metrics: accuracy
@@ -9,6 +9,10 @@ defaults:
 model:
   forward_fn:
     _target_: src.transforms.base.TransformCompose
+
+    transforms:
+      net: ???
+      argmax: ???
 
   criterion_coefs:
     cross_entropy: 1.0

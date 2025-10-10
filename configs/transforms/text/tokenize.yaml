@@ -7,5 +7,3 @@ transform_kwargs:
   truncation: true
   max_length: ${params.data.max_length}
   return_tensors: "pt"
-input_format: batch
-output_format: batch

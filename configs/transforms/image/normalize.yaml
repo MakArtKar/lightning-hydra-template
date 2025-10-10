@@ -1,10 +1,8 @@
-_target_: src.transforms.base.TransformWrapper
+_target_: src.transforms.base.ElementwiseTransformWrapper
 transform_fn:
   _target_: torchvision.transforms.Normalize
   mean: 0.1307
   std: 0.3081
 mapping:
   image: tensor
-is_elementwise: true
 new_key: image
-input_format: list

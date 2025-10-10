@@ -1,4 +1,5 @@
+# Base torch model that returns tensor output
+
 _target_: src.transforms.base.TransformWrapper
-transform_fn: ${params.net}
+transform_fn: ???
 mapping: ${params.data_to_model_mapping}
-new_key: logits

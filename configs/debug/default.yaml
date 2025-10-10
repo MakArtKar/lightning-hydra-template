@@ -34,3 +34,4 @@ data:
   num_workers: 0 # debuggers don't like multiprocessing
   pin_memory: False # disable gpu memory pin
   prefetch_factor: # should be None for num_workers = 0
+  persistent_workers: False

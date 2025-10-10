@@ -5,6 +5,7 @@
 
 defaults:
   - /tasks: [classification, image]
+  - /transforms/models@model.forward_fn.transforms.net: torch
 
 # all parameters below will be merged with parameters from default configurations set above
 # this allows you to overwrite only specified parameters
@@ -16,19 +17,25 @@ trainer:
   max_epochs: 3
   gradient_clip_val: 0.5
 
-params:
-  data_to_model_mapping:
-    image: x
-  net:
-    _target_: src.models.components.simple_dense_net.SimpleDenseNet
-    input_size: 784
-    lin1_size: 128
-    lin2_size: 256
-    lin3_size: 64
-    output_size: ${params.data.num_classes}
+params:    
   data:
     num_classes: 10
     hf_dataset_name: ylecun/mnist
+
+model:
+  forward_fn:
+    transforms:
+      net:
+        new_key: logits
+        mapping:
+          image: x
+        transform_fn:
+          _target_: src.models.components.simple_dense_net.SimpleDenseNet
+          input_size: 784
+          lin1_size: 128
+          lin2_size: 256
+          lin3_size: 64
+          output_size: ${params.data.num_classes}
 
 data:
   batch_size: 128
