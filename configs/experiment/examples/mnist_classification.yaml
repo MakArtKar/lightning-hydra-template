@@ -5,7 +5,7 @@
 
 defaults:
   - /tasks: [classification, image]
-  - /transforms/models@model.forward_fn.transforms.net: torch
+  - /transforms/models@model.forward_fn.net: torch
 
 # all parameters below will be merged with parameters from default configurations set above
 # this allows you to overwrite only specified parameters
@@ -24,18 +24,17 @@ params:
 
 model:
   forward_fn:
-    transforms:
-      net:
-        new_key: logits
-        mapping:
-          image: x
-        transform_fn:
-          _target_: src.models.components.simple_dense_net.SimpleDenseNet
-          input_size: 784
-          lin1_size: 128
-          lin2_size: 256
-          lin3_size: 64
-          output_size: ${params.data.num_classes}
+    net:
+      new_key: logits
+      mapping:
+        image: x
+      transform_fn:
+        _target_: src.models.components.simple_dense_net.SimpleDenseNet
+        input_size: 784
+        lin1_size: 128
+        lin2_size: 256
+        lin3_size: 64
+        output_size: ${params.data.num_classes}
 
 data:
   batch_size: 128
