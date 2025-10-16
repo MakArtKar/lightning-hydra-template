@@ -1,0 +1,8 @@
+_target_: src.transforms.base.TransformWrapper
+transform_fn:
+  _target_: torch.argmax
+  _partial_: true
+  dim: -1
+mapping:
+  logits: input
+new_key: predictions

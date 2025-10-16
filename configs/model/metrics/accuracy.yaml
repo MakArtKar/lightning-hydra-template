@@ -1,0 +1,7 @@
+accuracy:
+  - predictions: preds
+    label: target
+  - [train, val, test]
+  - _target_: torchmetrics.Accuracy
+    task: multiclass
+    num_classes: ${params.num_classes}

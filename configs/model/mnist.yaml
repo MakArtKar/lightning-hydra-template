@@ -1,50 +1,19 @@
+defaults:
+  - /transforms/base@forward_fn.transforms.net: model_forward
+  - /transforms/base@forward_fn.transforms.argmax: argmax
+  - criterion: cross_entropy
+  - metrics: accuracy
+
 _target_: src.models.base_module.BaseLitModule
 
 forward_fn:
   _target_: src.transforms.base.TransformCompose
-  transforms:
-    net:
-      _target_: src.transforms.base.TransformWrapper
-      transform_fn:
-        _target_: src.models.components.simple_dense_net.SimpleDenseNet
-        input_size: 784
-        lin1_size: 64
-        lin2_size: 128
-        lin3_size: 64
-        output_size: 10
-      mapping:
-        image: x
-      new_key: logits
-    argmax:
-      _target_: src.transforms.base.TransformWrapper
-      transform_fn:
-        _target_: torch.argmax
-        _partial_: true
-        dim: -1
-      mapping:
-        logits: input
-      new_key: predictions
-
-criterion:
-  ce:
-    - logits: input
-      label: target
-    - _target_: torch.nn.CrossEntropyLoss
 
 criterion_coefs:
-  ce: 1.0
-
-metrics:
-  acc:
-    - predictions: preds
-      label: target
-    - [train, val, test]
-    - _target_: torchmetrics.Accuracy
-      task: multiclass
-      num_classes: 10
+  cross_entropy: 1.0
 
 tracked_metric_mode: max
-tracked_metric_name: acc
+tracked_metric_name: accuracy
 
 optimizer:
   _target_: torch.optim.Adam

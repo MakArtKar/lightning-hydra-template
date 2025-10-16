@@ -21,16 +21,19 @@ trainer:
   max_epochs: 3
   gradient_clip_val: 0.5
 
+params:
+  net:
+    _target_: src.models.components.simple_dense_net.SimpleDenseNet
+    input_size: 784
+    lin1_size: 128
+    lin2_size: 256
+    lin3_size: 64
+    output_size: 10
+  num_classes: 10
+
 model:
   optimizer:
     lr: 0.002
-  forward_fn:
-    transforms:
-      net:
-        transform_fn:
-          lin1_size: 128
-          lin2_size: 256
-          lin3_size: 64
   compile: false
 
 data:

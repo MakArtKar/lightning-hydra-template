@@ -1,3 +1,7 @@
+defaults:
+  - /transforms/image@transform.transforms.to_tensor: to_tensor
+  - /transforms/image@transform.transforms.normalize: normalize
+
 _target_: src.data.hf_datamodule.HFDataModule
 hf_dict_dataset:
   _target_: datasets.load_dataset
@@ -8,23 +12,6 @@ val_ratio: 0.1
 
 transform:
   _target_: src.transforms.base.TransformCompose
-  transforms:
-    to_tensor:
-      _target_: src.transforms.base.ElementwiseTransformWrapper
-      transform_fn:
-        _target_: torchvision.transforms.ToTensor
-      mapping:
-        image: pic
-      new_key: image
-    normalize:
-      _target_: src.transforms.base.ElementwiseTransformWrapper
-      transform_fn:
-        _target_: torchvision.transforms.Normalize
-        mean: 0.1307
-        std: 0.3081
-      mapping:
-        image: tensor
-      new_key: image
 
 dataloader_kwargs:
   batch_size: 128

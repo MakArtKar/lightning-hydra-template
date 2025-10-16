@@ -1,0 +1,4 @@
+cross_entropy:
+  - logits: input
+    label: target
+  - _target_: torch.nn.CrossEntropyLoss

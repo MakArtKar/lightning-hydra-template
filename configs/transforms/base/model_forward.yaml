@@ -1,0 +1,5 @@
+_target_: src.transforms.base.TransformWrapper
+transform_fn: ${params.net}
+mapping:
+  image: x
+new_key: logits
