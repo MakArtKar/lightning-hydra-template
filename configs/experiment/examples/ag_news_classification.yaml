@@ -5,7 +5,7 @@
 
 defaults:
   - /tasks: [classification, text]
-  - /transforms/models@model.forward_fn.transforms.net: hf
+  - /transforms/models@model.forward_fn.net: hf
 # all parameters below will be merged with parameters from default configurations set above
 # this allows you to overwrite only specified parameters
 
@@ -30,16 +30,15 @@ params:
 
 model:
   forward_fn:
-    transforms:
-      net:
-        mapping:
-          input_ids: input_ids
-          attention_mask: attention_mask
-        model:
-          _target_: transformers.AutoModelForSequenceClassification.from_pretrained
-          _args_:
-            - ${params.data.model_name}
-          num_labels: ${params.data.num_classes}
+    net:
+      mapping:
+        input_ids: input_ids
+        attention_mask: attention_mask
+      model:
+        _target_: transformers.AutoModelForSequenceClassification.from_pretrained
+        _args_:
+          - ${params.data.model_name}
+        num_labels: ${params.data.num_classes}
 
 data:
   batch_size: 64

@@ -29,7 +29,7 @@ class TransformCompose(nn.Module):
     """
     def __init__(
         self,
-        transforms: Mapping[str, BaseTransform],
+        **transforms
     ):
         super().__init__()
         self.transforms = nn.ModuleList(transforms.values())

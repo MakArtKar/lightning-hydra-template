@@ -2,7 +2,7 @@
 
 defaults:
   - _self_
-  - /transforms/base@model.forward_fn.transforms.argmax: argmax
+  - /transforms/base@model.forward_fn.argmax: argmax
   - /model/criterion: cross_entropy
   - /model/metrics: accuracy
 
@@ -10,9 +10,8 @@ model:
   forward_fn:
     _target_: src.transforms.base.TransformCompose
 
-    transforms:
-      net: ???
-      argmax: ???
+    net: ???
+    argmax: ???
 
   criterion_coefs:
     cross_entropy: 1.0
