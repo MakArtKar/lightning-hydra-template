@@ -1,0 +1,15 @@
+# @package _global_
+
+defaults:
+  - /transforms/text@data.collate_postprocess: tokenize
+
+data:
+  collate_postprocess:
+    _target_: src.transforms.base.TransformWrapper
+    new_key:
+    transform_kwargs:
+      padding: true
+
+params:
+  data:
+    tokenizer: ??? # override in parent config

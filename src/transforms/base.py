@@ -51,14 +51,16 @@ class TransformWrapper(nn.Module):
     def __init__(
         self,
         transform_fn: Callable,
-        mapping: Mapping[str, str],
+        transform_kwargs: Mapping[str, Any] = {},
+        mapping: Mapping[str, str] = {},
         new_key: str | None = None,
     ):
         super().__init__()
         self.transform_fn = transform_fn
         self.mapping = mapping
         self.new_key = new_key
-
+        self.transform_kwargs = transform_kwargs
+    
     def forward(self, batch: Mapping[str, Any]) -> Mapping[str, Any]:
         """Invoke the wrapped callable using mapped batch inputs.
 
@@ -66,7 +68,7 @@ class TransformWrapper(nn.Module):
         :return: The input batch merged with the callable's outputs.
         """
         filtered_batch = {new_key: batch[old_key] for old_key, new_key in self.mapping.items()}
-        result = self.transform_fn(**filtered_batch)
+        result = self.transform_fn(**filtered_batch, **self.transform_kwargs)
         if self.new_key is not None:
             result = {self.new_key: result}
         return batch | result
@@ -81,10 +83,11 @@ class ElementwiseTransformWrapper(TransformWrapper):
     def __init__(
         self,
         transform_fn: Callable,
-        mapping: Mapping[str, str],
+        transform_kwargs: Mapping[str, Any] = {},
+        mapping: Mapping[str, str] = {},
         new_key: str | None = None,
     ):
-        super().__init__(self.transform_fn, mapping, new_key)
+        super().__init__(self.transform_fn, transform_kwargs, mapping, new_key)
         self.elementwise_transform_fn = transform_fn
 
     def _batch_to_list(self, batch: Mapping[str, list[Any]]) -> list[Mapping[str, Any]]:
@@ -110,7 +113,7 @@ class ElementwiseTransformWrapper(TransformWrapper):
         :return: Mapping or list suitable to be merged into the original batch.
         """
         examples = self._batch_to_list(batch)
-        outputs = [self.elementwise_transform_fn(**example) for example in examples]
+        outputs = [self.elementwise_transform_fn(**example, **self.transform_kwargs) for example in examples]
         if self.new_key is None:
             outputs = self._list_to_batch(outputs)
         return outputs

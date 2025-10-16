@@ -1,0 +1,52 @@
+# @package _global_
+
+# to execute this experiment run:
+# python train.py experiment=examples/ag_news_classification.yaml
+
+defaults:
+  - /tasks: [classification, text]
+  - /transforms/models@model.forward_fn.transforms.net: hf
+# all parameters below will be merged with parameters from default configurations set above
+# this allows you to overwrite only specified parameters
+
+tags: ["ag_news", "simple_dense_net"]
+
+trainer:
+  min_epochs: 1
+  max_epochs: 3
+  gradient_clip_val: 0.5
+
+params:
+  data:
+    num_classes: 4
+    hf_dataset_name: SetFit/ag_news
+    max_length: 128
+    
+    model_name: prajjwal1/bert-tiny
+    tokenizer:
+      _target_: transformers.AutoTokenizer.from_pretrained
+      _args_:
+        - ${params.data.model_name}
+
+model:
+  forward_fn:
+    transforms:
+      net:
+        mapping:
+          input_ids: input_ids
+          attention_mask: attention_mask
+        model:
+          _target_: transformers.AutoModelForSequenceClassification.from_pretrained
+          _args_:
+            - ${params.data.model_name}
+          num_labels: ${params.data.num_classes}
+
+data:
+  batch_size: 64
+
+logger:
+  wandb:
+    tags: ${tags}
+    group: "ag_news"
+  aim:
+    experiment: "ag_news"

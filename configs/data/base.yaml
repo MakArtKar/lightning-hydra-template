@@ -1,0 +1,12 @@
+_target_: src.data.hf_datamodule.HFDataModule
+hf_dict_dataset:
+  _target_: datasets.load_dataset
+  _args_:
+    - ${params.data.hf_dataset_name}
+
+val_ratio: 0.1
+
+batch_size: 128
+num_workers: 8
+pin_memory: True
+persistent_workers: True

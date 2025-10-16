@@ -1,4 +1,4 @@
-from typing import Any, Dict, Optional, Tuple, Mapping
+from typing import Any, Callable, Dict, Optional, Tuple, Mapping
 
 import torch
 from lightning import LightningDataModule
@@ -6,6 +6,14 @@ from torch.utils.data import ConcatDataset, DataLoader, random_split
 from datasets import DatasetDict, Dataset
 
 from src.transforms.base import BaseTransform
+
+class ComposedCollateFn:
+    def __init__(self, default_collate_fn: Callable, postprocess_fn: Callable):
+        self.default_collate_fn = default_collate_fn
+        self.postprocess_fn = postprocess_fn
+
+    def __call__(self, batch: Any) -> Any:
+        return self.postprocess_fn(self.default_collate_fn(batch))
 
 
 class HFDataModule(LightningDataModule):
@@ -18,24 +26,31 @@ class HFDataModule(LightningDataModule):
         self,
         hf_dict_dataset: DatasetDict,
         val_ratio: float = 0.1,
-        transform: Mapping[str, BaseTransform] = {},
-        dataloader_kwargs: dict[str, Any] = {},
+        transform: BaseTransform | None = None,
+        collate_postprocess: BaseTransform | None = None,
+        **dataloader_kwargs: dict[str, Any],
     ) -> None:
         """Initialize a `HFDataModule`.
 
         :param hf_dict_dataset: The Hugging Face DictDataset.
         :param val_ratio: The ratio of the validation set. Defaults to `0.1`.
-        :param dataloader_kwargs: The keyword arguments for the dataloader. Defaults to `{}`.
+        :param dataloader_kwargs: The keyword arguments for the dataloader.
         """
         super().__init__()
 
         # this line allows to access init params with 'self.hparams' attribute
         # also ensures init params will be stored in ckpt
-        self.save_hyperparameters(logger=False)
+        self.save_hyperparameters(logger=False, ignore=dataloader_kwargs.keys())
 
         self.hf_dict_dataset = hf_dict_dataset
         self.val_ratio = val_ratio
         self.dataloader_kwargs = dataloader_kwargs
+
+        if collate_postprocess is not None:
+            dataloader_kwargs["collate_fn"] = ComposedCollateFn(
+                dataloader_kwargs.get("collate_fn", torch.utils.data.default_collate),
+                collate_postprocess,
+            )
 
         self.data_train: Optional[Dataset] = None
         self.data_val: Optional[Dataset] = None

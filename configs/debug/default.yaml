@@ -31,7 +31,7 @@ trainer:
   detect_anomaly: true # raise exception if NaN or +/-inf is detected in any tensor
 
 data:
-  dataloader_kwargs:
-    num_workers: 0 # debuggers don't like multiprocessing
-    pin_memory: False # disable gpu memory pin
-    prefetch_factor: # should be None for num_workers = 0
+  num_workers: 0 # debuggers don't like multiprocessing
+  pin_memory: False # disable gpu memory pin
+  prefetch_factor: # should be None for num_workers = 0
+  persistent_workers: False

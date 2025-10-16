@@ -1,6 +1,5 @@
 _target_: src.transforms.base.ElementwiseTransformWrapper
 transform_fn:
   _target_: torchvision.transforms.ToTensor
-mapping:
-  image: pic
-new_key: image
+mapping: ???
+new_key: ??? # override in parent config

@@ -1,0 +1,5 @@
+# transformers hf PreTrainedModel
+
+_target_: src.transforms.models.hf.HFModelTransform
+model: ???
+mapping: ${params.data_to_model_mapping}
