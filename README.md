@@ -1,3 +1,31 @@
+## flash_ml CLI (package wrapper)
+
+Install and run using a local virtualenv:
+
+```bash
+python -m venv .venv && source .venv/bin/activate
+pip install -e .
+
+# run training
+python -m flash_ml train experiment=examples/mnist_classification trainer.max_epochs=3
+
+# run training with an absolute experiment file and a debug run
+python -m flash_ml train experiment=/abs/path/to/exp.yaml data.num_workers=8 debug=fdr
+
+# run evaluation
+python -m flash_ml eval ckpt_path=/abs/path/to/last.ckpt experiment=examples/mnist_classification
+
+# optional console script alias if installed
+flash-ml train experiment=examples/mnist_classification
+```
+
+Notes:
+
+- The CLI forwards all additional arguments directly to Hydra, preserving override semantics from `src/train.py` and `src/eval.py`.
+- If `experiment` points to a YAML file (absolute path or ends with `.yaml`/`.yml`), it is loaded as a file; otherwise it is treated as a config group selection (e.g., `examples/mnist_classification`).
+- Outputs remain under `logs/<task_name>/runs/...` as configured.
+
+
 <div align="center">
 
 # Lightning-Hydra-Template

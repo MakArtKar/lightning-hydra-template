@@ -16,6 +16,8 @@ setup(
         "console_scripts": [
             "train_command = src.train:main",
             "eval_command = src.eval:main",
+            # optional convenience alias for running the CLI
+            "flash-ml = flash_ml.cli:main",
         ]
     },
 )
