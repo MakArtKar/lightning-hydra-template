@@ -1,3 +1,4 @@
+import sys
 from typing import List
 
 import pytest
@@ -15,7 +16,7 @@ def run_sh_command(command: List[str]) -> None:
     """
     msg = None
     try:
-        sh.python(command)
+        sh.python(*command, _out=sys.stdout, _err=sys.stderr)
     except sh.ErrorReturnCode as e:
         msg = e.stderr.decode()
     if msg:
