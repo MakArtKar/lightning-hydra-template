@@ -44,5 +44,5 @@ class MetricsComposition(MetricCollection):
         result = {}
         for name in self._modules.keys():
             input_batch = {new_key: batch[old_key] for old_key, new_key in self.mapping[name].items()}
-            self._modules[name] = self._modules[name](**input_batch)
+            result[name] = self._modules[name](**input_batch)
         return result
