@@ -1,4 +1,54 @@
-_target_: ml_core.models.mnist_module.MNISTLitModule
+_target_: ml_core.models.base_module.BaseLitModule
+
+forward_fn:
+  _target_: ml_core.transforms.base.ComposeTransform
+  network:
+    _target_: ml_core.transforms.base.WrapTransform
+    transform:
+      _target_: ml_core.models.components.simple_dense_net.SimpleDenseNet
+      input_size: 784
+      lin1_size: 64
+      lin2_size: 128
+      lin3_size: 64
+      output_size: 10
+    mapping:
+      image: x
+    new_key: output
+  argmax:
+    _target_: ml_core.transforms.base.WrapTransform
+    transform:
+      _target_: torch.argmax
+      _partial_: true
+      dim: -1
+    mapping:
+      output: input
+    new_key: prediction
+
+criterions:
+  _target_: ml_core.models.utils.CriterionsComposition
+  criterions:
+    ce:
+      _target_: torch.nn.CrossEntropyLoss
+  weights:
+    ce: 1.0
+  mapping:
+    ce:
+      output: input
+      label: target
+
+metrics:
+  _target_: ml_core.models.utils.MetricsComposition
+  metrics:
+    accuracy:
+      _target_: torchmetrics.Accuracy
+      task: multiclass
+      num_classes: 10
+  mapping:
+    accuracy:
+      prediction: preds
+      label: target
+
+tracked_metric_name: accuracy
 
 optimizer:
   _target_: torch.optim.Adam
@@ -12,14 +62,6 @@ scheduler:
   mode: min
   factor: 0.1
   patience: 10
-
-net:
-  _target_: ml_core.models.components.simple_dense_net.SimpleDenseNet
-  input_size: 784
-  lin1_size: 64
-  lin2_size: 128
-  lin3_size: 64
-  output_size: 10
 
 # compile model for faster training with pytorch 2.0
 compile: false
