@@ -665,8 +665,8 @@ logger:
 
 **Basic workflow**
 
-1. Write your PyTorch Lightning module (see [models/mnist_module.py](ml_core/models/mnist_module.py) for example)
-2. Write your PyTorch Lightning datamodule (see [data/mnist_datamodule.py](ml_core/data/mnist_datamodule.py) for example)
+1. Write your PyTorch Lightning module (see [models/base_module.py](ml_core/models/base_module.py) for example)
+2. Write your PyTorch Lightning datamodule (see [data/base_datamodule.py](ml_core/data/base_datamodule.py) for example)
 3. Write your experiment config, containing paths to model and datamodule
 4. Run training with chosen experiment config:
    ```bash
@@ -784,7 +784,7 @@ defaults:
 
 # choose metric which will be optimized by Optuna
 # make sure this is the correct name of some metric logged in lightning module!
-optimized_metric: "val/acc_best"
+optimized_metric: "val/best"
 
 # here we define Optuna hyperparameter search
 # it optimizes for value returned from function with @hydra.main decorator
@@ -1132,8 +1132,8 @@ pip install git+git://github.com/YourGithubName/your-repo-name.git --upgrade
 So any file can be easily imported into any other file like so:
 
 ```python
-from project_name.models.mnist_module import MNISTLitModule
-from project_name.data.mnist_datamodule import MNISTDataModule
+from project_name.models.base_module import BaseLitModule
+from project_name.data.base_datamodule import BaseDataModule
 ```
 
 </details>
