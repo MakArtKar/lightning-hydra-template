@@ -2,6 +2,7 @@ from typing import Any, Callable, Mapping
 
 import torch.nn as nn
 
+
 class RenameTransform(nn.Module):
     def __init__(self, mapping: Mapping[str, str]) -> None:
         super().__init__()
@@ -23,7 +24,9 @@ class ComposeTransform(nn.Module):
 
 
 class WrapTransform(nn.Module):
-    def __init__(self, transform: Callable, new_key: str, mapping: Mapping[str, str] | None = None):
+    def __init__(
+        self, transform: Callable, new_key: str, mapping: Mapping[str, str] | None = None
+    ):
         super().__init__()
         self.transform = transform
         self.new_key = new_key

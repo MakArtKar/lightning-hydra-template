@@ -1,7 +1,7 @@
 from typing import Any, Mapping
 
 import torch.nn as nn
-from torchmetrics import MetricCollection, Metric
+from torchmetrics import Metric, MetricCollection
 
 
 class CriterionsComposition(nn.Module):
@@ -21,7 +21,9 @@ class CriterionsComposition(nn.Module):
         total_loss = 0.0
         losses = {}
         for name, criterion in self.criterions.items():
-            input_batch = {new_key: batch[old_key] for old_key, new_key in self.mapping[name].items()}
+            input_batch = {
+                new_key: batch[old_key] for old_key, new_key in self.mapping[name].items()
+            }
             losses[name] = criterion(**input_batch)
             total_loss += self.weights[name] * losses[name]
         losses["total"] = total_loss
@@ -43,6 +45,8 @@ class MetricsComposition(MetricCollection):
     def forward(self, batch) -> dict[str, Any]:
         result = {}
         for name in self._modules.keys():
-            input_batch = {new_key: batch[old_key] for old_key, new_key in self.mapping[name].items()}
+            input_batch = {
+                new_key: batch[old_key] for old_key, new_key in self.mapping[name].items()
+            }
             result[name] = self._modules[name](**input_batch)
         return result

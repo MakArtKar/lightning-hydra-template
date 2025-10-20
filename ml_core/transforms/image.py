@@ -2,6 +2,7 @@ from typing import Any, Callable, Mapping
 
 import torch.nn as nn
 
+
 class TorchVisionTransform(nn.Module):
     def __init__(self, transform: Callable, key: str) -> None:
         super().__init__()
