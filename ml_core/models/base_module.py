@@ -106,7 +106,6 @@ class BaseLitModule(LightningModule):
                     "monitor": f"val/{self.hparams.tracked_metric_name or 'loss'}",
                     "interval": "epoch",
                     "frequency": 1,
-                    "mode": "max" if self.hparams.tracked_metric_name else "min"
                 },
             }
         return {"optimizer": optimizer}
