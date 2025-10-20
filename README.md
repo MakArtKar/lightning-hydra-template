@@ -514,7 +514,7 @@ Suggestions for improvements are always welcome!
 All PyTorch Lightning modules are dynamically instantiated from module paths specified in config. Example model config:
 
 ```yaml
-_target_: ml_core.models.mnist_model.MNISTLitModule
+_target_: ml_core.models.base_model.BaseLitModule
 lr: 0.001
 net:
   _target_: ml_core.models.components.simple_dense_net.SimpleDenseNet
@@ -736,7 +736,7 @@ You can use many of them at once (see [configs/logger/many_loggers.yaml](configs
 
 You can also write your own logger.
 
-Lightning provides convenient method for logging custom metrics from inside LightningModule. Read the [docs](https://pytorch-lightning.readthedocs.io/en/latest/extensions/logging.html#automatic-logging) or take a look at [MNIST example](ml_core/models/mnist_module.py).
+Lightning provides convenient method for logging custom metrics from inside LightningModule. Read the [docs](https://pytorch-lightning.readthedocs.io/en/latest/extensions/logging.html#automatic-logging) or take a look at [MNIST example](ml_core/models/base_module.py).
 
 <br>
 
