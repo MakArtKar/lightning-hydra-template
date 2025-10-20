@@ -372,12 +372,12 @@ python train.py -m data.batch_size=32,64,128 model.lr=0.001,0.0005
 <summary><b>Create a sweep over hyperparameters with Optuna</b></summary>
 
 ```bash
-# this will run hyperparameter search defined in `configs/hparams_search/mnist_optuna.yaml`
+# this will run hyperparameter search defined in `configs/hparams_search/optuna.yaml`
 # over chosen experiment config
-python train.py -m hparams_search=mnist_optuna experiment=example
+python train.py -m hparams_search=optuna experiment=example
 ```
 
-> **Note**: Using [Optuna Sweeper](https://hydra.cc/docs/next/plugins/optuna_sweeper) doesn't require you to add any boilerplate to your code, everything is defined in a [single config file](configs/hparams_search/mnist_optuna.yaml).
+> **Note**: Using [Optuna Sweeper](https://hydra.cc/docs/next/plugins/optuna_sweeper) doesn't require you to add any boilerplate to your code, everything is defined in a [single config file](configs/hparams_search/optuna.yaml).
 
 > **Warning**: Optuna sweeps are not failure-resistant (if one job crashes then the whole sweep crashes).
 
@@ -816,7 +816,7 @@ hydra:
 
 </details>
 
-Next, execute it with: `python train.py -m hparams_search=mnist_optuna`
+Next, execute it with: `python train.py -m hparams_search=optuna`
 
 Using this approach doesn't require adding any boilerplate to code, everything is defined in a single config file. The only necessary thing is to return the optimized metric value from the launch file.
 
