@@ -2,26 +2,39 @@ from pathlib import Path
 
 import pytest
 import torch
+from datasets import load_dataset
+from torchvision.transforms import ToTensor, Normalize
 
-from ml_core.data.mnist_datamodule import MNISTDataModule
+from ml_core.data.base_datamodule import BaseDataModule
+from ml_core.transforms.base import ComposeTransform
+from ml_core.transforms.image import TorchVisionTransform
 
 
 @pytest.mark.parametrize("batch_size", [32, 128])
-def test_mnist_datamodule(batch_size: int) -> None:
-    """Tests `MNISTDataModule` to verify that it can be downloaded correctly, that the necessary
+def test_base_datamodule(batch_size: int) -> None:
+    """Tests `BaseDataModule` to verify that it can be downloaded correctly, that the necessary
     attributes were created (e.g., the dataloader objects), and that dtypes and batch sizes
     correctly match.
 
     :param batch_size: Batch size of the data to be loaded by the dataloader.
     """
-    data_dir = "data/"
+    dataset = load_dataset("ylecun/mnist")
 
-    dm = MNISTDataModule(data_dir=data_dir, batch_size=batch_size)
+    transform = ComposeTransform(
+        to_tensor=TorchVisionTransform(
+            transform=ToTensor(),
+            key="image",
+        ),
+        normalize=TorchVisionTransform(
+            transform=Normalize((0.1307,), (0.3081,)),
+            key="image",
+        ),
+    )
+
+    dm = BaseDataModule(dataset, transform=transform, batch_size=batch_size)
     dm.prepare_data()
 
     assert not dm.data_train and not dm.data_val and not dm.data_test
-    assert Path(data_dir, "MNIST").exists()
-    assert Path(data_dir, "MNIST", "raw").exists()
 
     dm.setup()
     assert dm.data_train and dm.data_val and dm.data_test
@@ -31,7 +44,7 @@ def test_mnist_datamodule(batch_size: int) -> None:
     assert num_datapoints == 70_000
 
     batch = next(iter(dm.train_dataloader()))
-    x, y = batch
+    x, y = batch["image"], batch["label"]
     assert len(x) == batch_size
     assert len(y) == batch_size
     assert x.dtype == torch.float32

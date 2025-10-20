@@ -19,6 +19,7 @@ def test_experiments(tmp_path: Path) -> None:
     command = [
         startfile,
         "-m",
+        "--config-dir=configs/",
         "experiment=glob(*)",
         "hydra.sweep.dir=" + str(tmp_path),
         "++trainer.fast_dev_run=true",
@@ -36,6 +37,7 @@ def test_hydra_sweep(tmp_path: Path) -> None:
     command = [
         startfile,
         "-m",
+        "--config-dir=configs/",
         "hydra.sweep.dir=" + str(tmp_path),
         "model.optimizer.lr=0.005,0.01",
         "++trainer.fast_dev_run=true",
@@ -54,6 +56,7 @@ def test_hydra_sweep_ddp_sim(tmp_path: Path) -> None:
     command = [
         startfile,
         "-m",
+        "--config-dir=configs/",
         "hydra.sweep.dir=" + str(tmp_path),
         "trainer=ddp_sim",
         "trainer.max_epochs=3",
@@ -75,7 +78,8 @@ def test_optuna_sweep(tmp_path: Path) -> None:
     command = [
         startfile,
         "-m",
-        "hparams_search=mnist_optuna",
+        "--config-dir=configs/",
+        "hparams_search=optuna",
         "hydra.sweep.dir=" + str(tmp_path),
         "hydra.sweeper.n_trials=10",
         "hydra.sweeper.sampler.n_startup_trials=5",
@@ -94,7 +98,8 @@ def test_optuna_sweep_ddp_sim_wandb(tmp_path: Path) -> None:
     command = [
         startfile,
         "-m",
-        "hparams_search=mnist_optuna",
+        "--config-dir=configs/",
+        "hparams_search=optuna",
         "hydra.sweep.dir=" + str(tmp_path),
         "hydra.sweeper.n_trials=5",
         "trainer=ddp_sim",

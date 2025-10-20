@@ -372,12 +372,12 @@ python train.py -m data.batch_size=32,64,128 model.lr=0.001,0.0005
 <summary><b>Create a sweep over hyperparameters with Optuna</b></summary>
 
 ```bash
-# this will run hyperparameter search defined in `configs/hparams_search/mnist_optuna.yaml`
+# this will run hyperparameter search defined in `configs/hparams_search/optuna.yaml`
 # over chosen experiment config
-python train.py -m hparams_search=mnist_optuna experiment=example
+python train.py -m hparams_search=optuna experiment=example
 ```
 
-> **Note**: Using [Optuna Sweeper](https://hydra.cc/docs/next/plugins/optuna_sweeper) doesn't require you to add any boilerplate to your code, everything is defined in a [single config file](configs/hparams_search/mnist_optuna.yaml).
+> **Note**: Using [Optuna Sweeper](https://hydra.cc/docs/next/plugins/optuna_sweeper) doesn't require you to add any boilerplate to your code, everything is defined in a [single config file](configs/hparams_search/optuna.yaml).
 
 > **Warning**: Optuna sweeps are not failure-resistant (if one job crashes then the whole sweep crashes).
 
@@ -514,7 +514,7 @@ Suggestions for improvements are always welcome!
 All PyTorch Lightning modules are dynamically instantiated from module paths specified in config. Example model config:
 
 ```yaml
-_target_: ml_core.models.mnist_model.MNISTLitModule
+_target_: ml_core.models.base_model.BaseLitModule
 lr: 0.001
 net:
   _target_: ml_core.models.components.simple_dense_net.SimpleDenseNet
@@ -665,8 +665,8 @@ logger:
 
 **Basic workflow**
 
-1. Write your PyTorch Lightning module (see [models/mnist_module.py](ml_core/models/mnist_module.py) for example)
-2. Write your PyTorch Lightning datamodule (see [data/mnist_datamodule.py](ml_core/data/mnist_datamodule.py) for example)
+1. Write your PyTorch Lightning module (see [models/base_module.py](ml_core/models/base_module.py) for example)
+2. Write your PyTorch Lightning datamodule (see [data/base_datamodule.py](ml_core/data/base_datamodule.py) for example)
 3. Write your experiment config, containing paths to model and datamodule
 4. Run training with chosen experiment config:
    ```bash
@@ -736,7 +736,7 @@ You can use many of them at once (see [configs/logger/many_loggers.yaml](configs
 
 You can also write your own logger.
 
-Lightning provides convenient method for logging custom metrics from inside LightningModule. Read the [docs](https://pytorch-lightning.readthedocs.io/en/latest/extensions/logging.html#automatic-logging) or take a look at [MNIST example](ml_core/models/mnist_module.py).
+Lightning provides convenient method for logging custom metrics from inside LightningModule. Read the [docs](https://pytorch-lightning.readthedocs.io/en/latest/extensions/logging.html#automatic-logging) or take a look at [MNIST example](ml_core/models/base_module.py).
 
 <br>
 
@@ -784,7 +784,7 @@ defaults:
 
 # choose metric which will be optimized by Optuna
 # make sure this is the correct name of some metric logged in lightning module!
-optimized_metric: "val/acc_best"
+optimized_metric: "val/best"
 
 # here we define Optuna hyperparameter search
 # it optimizes for value returned from function with @hydra.main decorator
@@ -816,7 +816,7 @@ hydra:
 
 </details>
 
-Next, execute it with: `python train.py -m hparams_search=mnist_optuna`
+Next, execute it with: `python train.py -m hparams_search=optuna`
 
 Using this approach doesn't require adding any boilerplate to code, everything is defined in a single config file. The only necessary thing is to return the optimized metric value from the launch file.
 
@@ -1132,8 +1132,8 @@ pip install git+git://github.com/YourGithubName/your-repo-name.git --upgrade
 So any file can be easily imported into any other file like so:
 
 ```python
-from project_name.models.mnist_module import MNISTLitModule
-from project_name.data.mnist_datamodule import MNISTDataModule
+from project_name.models.base_module import BaseLitModule
+from project_name.data.base_datamodule import BaseDataModule
 ```
 
 </details>
