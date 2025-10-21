@@ -1,0 +1,5 @@
+---
+description: Debugging training or evaluation
+alwaysApply: false
+---
+If you want to debug run - use debug=fdr
