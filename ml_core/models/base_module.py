@@ -8,6 +8,12 @@ from ml_core.models.utils import CriterionsComposition, MetricsComposition
 
 
 class BaseLitModule(LightningModule):
+    """Generic LightningModule wiring forward, losses, metrics, and optimizers.
+
+    Expects a callable `forward_fn`, a `CriterionsComposition` for computing losses,
+    optional `MetricsComposition`, and optimizer/scheduler factories. Provides common
+    training/validation/test steps and logs with `sync_dist` enabled for DDP.
+    """
     def __init__(
         self,
         forward_fn: Callable,
@@ -20,6 +26,17 @@ class BaseLitModule(LightningModule):
         tracked_metric_name: str | None = None,
         compile: bool = False,
     ) -> None:
+        """Initialize the Lightning module wiring.
+
+        :param forward_fn: Callable mapping a batch to outputs (e.g., network forward).
+        :param criterions: Composition of losses operating on the output batch mapping.
+        :param optimizer: Factory returning a configured optimizer for the model parameters.
+        :param scheduler: Optional factory returning an LR scheduler for the optimizer.
+        :param metrics: Optional composition of metrics operating on the output batch mapping.
+        :param tracked_metric_name: Metric key (without stage prefix) used to track the best
+            value on validation; if None, the total validation loss is tracked.
+        :param compile: Whether to compile ``forward_fn`` with ``torch.compile`` during fit.
+        """
         super().__init__()
 
         self.save_hyperparameters(logger=False)
@@ -47,9 +64,15 @@ class BaseLitModule(LightningModule):
             raise ValueError("`tracked_metric_name` should be None in case null metrics")
 
     def forward(self, batch) -> Mapping[str, Any]:
+        """Forward pass producing a dict-like output expected by losses/metrics.
+
+        :param batch: Mapping with input tensors.
+        :return: Mapping augmented with model outputs.
+        """
         return self.forward_fn(batch)
 
     def on_train_start(self) -> None:
+        """Reset validation aggregators and best metric at train start."""
         for criterion_name in self.criterions.keys():
             self.val_losses[criterion_name].reset()
         self.val_losses["total"].reset()
@@ -62,6 +85,7 @@ class BaseLitModule(LightningModule):
     def model_step(
         self, batch: Mapping[str, Any], stage: Literal["train", "val", "test"]
     ) -> Mapping[str, Any]:
+        """Shared step computing losses/metrics and logging for a stage."""
         batch = self(batch)
 
         # Losses
@@ -95,15 +119,19 @@ class BaseLitModule(LightningModule):
         return {"loss": losses["total"], **batch}
 
     def training_step(self, batch: Mapping[str, Any], batch_idx: int) -> torch.Tensor:
+        """Lightning training step."""
         return self.model_step(batch, "train")
 
     def validation_step(self, batch: Mapping[str, Any], batch_idx: int) -> torch.Tensor:
+        """Lightning validation step."""
         return self.model_step(batch, "val")
 
     def test_step(self, batch: Mapping[str, Any], batch_idx: int) -> torch.Tensor:
+        """Lightning test step."""
         return self.model_step(batch, "test")
 
     def on_validation_epoch_end(self) -> None:
+        """Compute and log best validation metric at epoch end."""
         if self.hparams.tracked_metric_name is None:
             tracked_metric = self.val_losses["total"]
         else:
@@ -120,10 +148,12 @@ class BaseLitModule(LightningModule):
         )
 
     def setup(self, stage: str) -> None:
+        """Optionally compile the wrapped forward callable in fit stage."""
         if self.hparams.compile and stage == "fit":
             self.forward_fn = torch.compile(self.forward_fn)
 
     def configure_optimizers(self) -> dict[str, Any]:
+        """Create optimizer and (optionally) LR scheduler config for Trainer."""
         optimizer = self.hparams.optimizer(params=self.trainer.model.parameters())
         if self.hparams.scheduler is not None:
             scheduler = self.hparams.scheduler(optimizer=optimizer)

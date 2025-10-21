@@ -1,3 +1,4 @@
+"""Generic LightningDataModule wrapping a Hugging Face DatasetDict."""
 from typing import Any, Callable, Optional
 
 from datasets import DatasetDict
@@ -6,6 +7,11 @@ from torch.utils.data import DataLoader, Dataset
 
 
 class BaseDataModule(LightningDataModule):
+    """LightningDataModule that splits HF datasets and builds DataLoaders.
+
+    Divides batch size across devices in distributed runs and applies an optional
+    transform on-the-fly via `with_transform`.
+    """
     def __init__(
         self,
         hf_dict_dataset: DatasetDict,
@@ -13,6 +19,13 @@ class BaseDataModule(LightningDataModule):
         transform: Callable | None = None,
         **dataloader_kwargs: dict[str, Any],
     ) -> None:
+        """Initialize the data module with datasets and loader settings.
+
+        :param hf_dict_dataset: A preloaded Hugging Face `DatasetDict`.
+        :param val_ratio: Fraction of train to use for validation split.
+        :param transform: Optional mapping transform applied via `with_transform`.
+        :param dataloader_kwargs: Extra arguments forwarded to DataLoader.
+        """
         super().__init__()
 
         self.save_hyperparameters(logger=False, ignore=dataloader_kwargs.keys())

@@ -1,3 +1,5 @@
+"""Utility subpackage: instantiation, logging helpers, and misc functions."""
+
 from ml_core.utils.instantiators import instantiate_callbacks, instantiate_loggers
 from ml_core.utils.logging_utils import log_hyperparameters
 from ml_core.utils.pylogger import RankedLogger

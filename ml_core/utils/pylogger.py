@@ -1,3 +1,4 @@
+"""Logging utilities with rank-aware adapter for multi-process runs."""
 import logging
 from typing import Mapping, Optional
 
@@ -5,7 +6,11 @@ from lightning_utilities.core.rank_zero import rank_prefixed_message, rank_zero_
 
 
 class RankedLogger(logging.LoggerAdapter):
-    """A multi-GPU-friendly python command line logger."""
+    """A multi-GPU-friendly python command line logger.
+
+    Prefixes messages with the current process rank and can be configured
+    to only emit messages on rank zero.
+    """
 
     def __init__(
         self,

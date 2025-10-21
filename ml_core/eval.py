@@ -1,3 +1,4 @@
+"""Evaluation entrypoint and helper to run test loop from Hydra configs."""
 from typing import Any, Dict, List, Tuple
 
 import hydra
