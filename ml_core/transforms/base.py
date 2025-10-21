@@ -1,4 +1,5 @@
 """Composable transforms operating on dict-based mini-batches."""
+
 from typing import Any, Callable, Mapping
 
 import torch.nn as nn
@@ -9,6 +10,7 @@ class RenameTransform(nn.Module):
 
     :param mapping: Mapping from old keys to new keys to construct.
     """
+
     def __init__(self, mapping: Mapping[str, str]) -> None:
         """Initialize the transform.
 
@@ -27,6 +29,7 @@ class ComposeTransform(nn.Module):
 
     :param transforms: Named sub-transforms applied in insertion order.
     """
+
     def __init__(self, **transforms) -> None:
         """Initialize the composed transform container.
 
@@ -49,6 +52,7 @@ class WrapTransform(nn.Module):
     :param new_key: Key to place the callable output under.
     :param mapping: Optional mapping from batch to callable argument names.
     """
+
     def __init__(
         self, transform: Callable, new_key: str, mapping: Mapping[str, str] | None = None
     ):

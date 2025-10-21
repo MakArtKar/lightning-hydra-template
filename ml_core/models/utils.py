@@ -11,6 +11,7 @@ class CriterionsComposition(nn.Module):
     criterion, aggregates a weighted total under `"total"`, and exposes constituent
     loss names via `keys()`.
     """
+
     def __init__(
         self,
         criterions: Mapping[str, nn.Module],
@@ -49,6 +50,7 @@ class CriterionsComposition(nn.Module):
 
 class MetricsComposition(MetricCollection):
     """Wrap a MetricCollection with batch-field remapping per metric entry."""
+
     def __init__(
         self,
         metrics: Mapping[str, Metric],

@@ -1,4 +1,5 @@
 """Image transforms adapters for dict-based mini-batches."""
+
 from typing import Any, Callable, Mapping
 
 import torch.nn as nn
@@ -10,6 +11,7 @@ class TorchVisionTransform(nn.Module):
     :param transform: Callable transform to apply to each image.
     :param key: Batch key containing a sequence of images.
     """
+
     def __init__(self, transform: Callable, key: str) -> None:
         """Initialize the transform wrapper.
 

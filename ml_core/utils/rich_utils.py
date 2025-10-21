@@ -1,4 +1,5 @@
 """Rich-powered helpers to pretty-print configs and enforce tag prompts."""
+
 from pathlib import Path
 from typing import Sequence
 

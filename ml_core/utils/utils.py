@@ -1,3 +1,5 @@
+"""General utilities: config extras, task wrapper, and metric helpers."""
+
 import warnings
 from importlib.util import find_spec
 from typing import Any, Callable, Dict, Optional, Tuple
@@ -7,8 +9,6 @@ from omegaconf import DictConfig
 from ml_core.utils import pylogger, rich_utils
 
 log = pylogger.RankedLogger(__name__, rank_zero_only=True)
-
-"""General utilities: config extras, task wrapper, and metric helpers."""
 
 
 def extras(cfg: DictConfig) -> None:

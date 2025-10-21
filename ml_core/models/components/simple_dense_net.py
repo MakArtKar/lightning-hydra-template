@@ -1,4 +1,5 @@
 """A simple fully-connected neural net for computing predictions."""
+
 import torch
 from torch import nn
 

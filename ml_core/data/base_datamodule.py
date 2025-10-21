@@ -1,4 +1,5 @@
 """Generic LightningDataModule wrapping a Hugging Face DatasetDict."""
+
 from typing import Any, Callable, Optional
 
 from datasets import DatasetDict
@@ -12,6 +13,7 @@ class BaseDataModule(LightningDataModule):
     Divides batch size across devices in distributed runs and applies an optional
     transform on-the-fly via `with_transform`.
     """
+
     def __init__(
         self,
         hf_dict_dataset: DatasetDict,

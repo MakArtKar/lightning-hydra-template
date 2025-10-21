@@ -14,6 +14,7 @@ class BaseLitModule(LightningModule):
     optional `MetricsComposition`, and optimizer/scheduler factories. Provides common
     training/validation/test steps and logs with `sync_dist` enabled for DDP.
     """
+
     def __init__(
         self,
         forward_fn: Callable,

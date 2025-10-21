@@ -1,4 +1,5 @@
 """Helpers for logging experiment hyperparameters to Lightning loggers."""
+
 from typing import Any, Dict
 
 from lightning_utilities.core.rank_zero import rank_zero_only
