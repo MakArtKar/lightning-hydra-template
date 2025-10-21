@@ -62,6 +62,7 @@ def test_train_epoch_double_val_loop(cfg_train: DictConfig) -> None:
     train(cfg_train)
 
 
+@RunIf(skip_windows=True)
 @pytest.mark.slow
 def test_train_ddp_sim(cfg_train: DictConfig) -> None:
     """Simulate DDP (Distributed Data Parallel) on 2 CPU processes.
