@@ -1,7 +1,8 @@
 #!/usr/bin/env python
 
-from setuptools import find_packages, setup
 from pathlib import Path
+
+from setuptools import find_packages, setup
 
 
 def read_requirements():
@@ -16,6 +17,7 @@ def read_requirements():
             if requirement:
                 requirements.append(requirement)
         return requirements
+
 
 setup(
     name="ml_core",

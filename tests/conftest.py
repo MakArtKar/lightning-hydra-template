@@ -29,6 +29,7 @@ def cfg_train_global() -> DictConfig:
             cfg.trainer.devices = 1
             cfg.data.num_workers = 0
             cfg.data.pin_memory = False
+            cfg.data.persistent_workers = False
             cfg.extras.print_config = False
             cfg.extras.enforce_tags = False
             cfg.logger = None
@@ -54,6 +55,7 @@ def cfg_eval_global() -> DictConfig:
             cfg.trainer.devices = 1
             cfg.data.num_workers = 0
             cfg.data.pin_memory = False
+            cfg.data.persistent_workers = False
             cfg.extras.print_config = False
             cfg.extras.enforce_tags = False
             cfg.logger = None

@@ -3,7 +3,7 @@ from pathlib import Path
 import pytest
 import torch
 from datasets import load_dataset
-from torchvision.transforms import ToTensor, Normalize
+from torchvision.transforms import Normalize, ToTensor
 
 from ml_core.data.base_datamodule import BaseDataModule
 from ml_core.transforms.base import ComposeTransform
@@ -18,7 +18,7 @@ def test_base_datamodule(batch_size: int) -> None:
 
     :param batch_size: Batch size of the data to be loaded by the dataloader.
     """
-    dataset = load_dataset("ylecun/mnist")
+    dataset = load_dataset("ylecun/mnist")  # nosec B615 - test fixture download
 
     transform = ComposeTransform(
         to_tensor=TorchVisionTransform(

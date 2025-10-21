@@ -1,3 +1,5 @@
+"""Factories for instantiating callbacks and loggers from Hydra configs."""
+
 from typing import List
 
 import hydra

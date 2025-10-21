@@ -1,3 +1,5 @@
+"""A simple fully-connected neural net for computing predictions."""
+
 import torch
 from torch import nn
 
@@ -39,8 +41,8 @@ class SimpleDenseNet(nn.Module):
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         """Perform a single forward pass through the network.
 
-        :param x: The input tensor.
-        :return: A tensor of predictions.
+        :param x: The input tensor of shape (B, C, W, H).
+        :return: A tensor of predictions of shape (B, output_size).
         """
         batch_size, channels, width, height = x.size()
 

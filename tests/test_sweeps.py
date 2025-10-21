@@ -22,6 +22,9 @@ def test_experiments(tmp_path: Path) -> None:
         "--config-dir=configs/",
         "experiment=glob(*)",
         "hydra.sweep.dir=" + str(tmp_path),
+        "++data.num_workers=0",
+        "++data.pin_memory=False",
+        "++data.persistent_workers=False",
         "++trainer.fast_dev_run=true",
     ] + overrides
     run_sh_command(command)
@@ -40,6 +43,9 @@ def test_hydra_sweep(tmp_path: Path) -> None:
         "--config-dir=configs/",
         "hydra.sweep.dir=" + str(tmp_path),
         "model.optimizer.lr=0.005,0.01",
+        "++data.num_workers=0",
+        "++data.pin_memory=False",
+        "++data.persistent_workers=False",
         "++trainer.fast_dev_run=true",
     ] + overrides
 
@@ -60,6 +66,9 @@ def test_hydra_sweep_ddp_sim(tmp_path: Path) -> None:
         "hydra.sweep.dir=" + str(tmp_path),
         "trainer=ddp_sim",
         "trainer.max_epochs=3",
+        "++data.num_workers=0",
+        "++data.pin_memory=False",
+        "++data.persistent_workers=False",
         "+trainer.limit_train_batches=0.01",
         "+trainer.limit_val_batches=0.1",
         "+trainer.limit_test_batches=0.1",
@@ -83,6 +92,9 @@ def test_optuna_sweep(tmp_path: Path) -> None:
         "hydra.sweep.dir=" + str(tmp_path),
         "hydra.sweeper.n_trials=10",
         "hydra.sweeper.sampler.n_startup_trials=5",
+        "++data.num_workers=0",
+        "++data.pin_memory=False",
+        "++data.persistent_workers=False",
         "++trainer.fast_dev_run=true",
     ] + overrides
     run_sh_command(command)
@@ -104,6 +116,9 @@ def test_optuna_sweep_ddp_sim_wandb(tmp_path: Path) -> None:
         "hydra.sweeper.n_trials=5",
         "trainer=ddp_sim",
         "trainer.max_epochs=3",
+        "++data.num_workers=0",
+        "++data.pin_memory=False",
+        "++data.persistent_workers=False",
         "+trainer.limit_train_batches=0.01",
         "+trainer.limit_val_batches=0.1",
         "+trainer.limit_test_batches=0.1",
