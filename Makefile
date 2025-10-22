@@ -90,4 +90,4 @@ precommit: ## Run all pre-commit hooks on all files
 	. .venv/bin/activate; pre-commit run --all-files
 
 lint-arch: ## Run import-linter architecture checks
-	. .venv/bin/activate; lint-imports
+	. .venv/bin/activate; lint-imports --config=architecture/importlinter.ini
