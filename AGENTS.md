@@ -34,8 +34,9 @@ Short, actionable runbook for agents collaborating in this repository.
    ```
 5. Functional checks (when relevant)
    ```bash
-   python ml_core/train.py debug=fdr
+   python ml_core/train.py --config-dir configs debug=fdr
    ```
+   Note: Always include `--config-dir configs` when invoking `ml_core/train.py` or `ml_core/eval.py` from the repo root. If running from inside `ml_core/`, use `--config-dir ../configs`.
 6. Summarize impact
    - What changed, why it’s safe, how to validate.
 
@@ -74,7 +75,7 @@ Short, actionable runbook for agents collaborating in this repository.
 
 - Prefer exact references to files, functions, and diffs.
 - Use minimal, runnable commands; avoid large log dumps.
-- Use tags in Hydra runs when helpful: `python ml_core/train.py tags=["dev"]`.
+- Use tags in Hydra runs when helpful: `python ml_core/train.py --config-dir configs tags=["dev"]`.
 
 ## Context kits (stub)
 

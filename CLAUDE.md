@@ -51,11 +51,11 @@ High-signal, compact checklist for AI-assisted development in this repo.
   ```
 - Useful training/debug commands:
   ```bash
-  python ml_core/train.py                 # default
-  python ml_core/train.py debug=default   # debug profile
-  python ml_core/train.py debug=fdr       # 1 batch train/val/test
-  python ml_core/train.py debug=profiler  # profile timings
-  python ml_core/train.py debug=overfit   # try overfitting to 1 batch
+  python ml_core/train.py --config-dir configs                 # default
+  python ml_core/train.py --config-dir configs debug=default   # debug profile
+  python ml_core/train.py --config-dir configs debug=fdr       # 1 batch train/val/test
+  python ml_core/train.py --config-dir configs debug=profiler  # profile timings
+  python ml_core/train.py --config-dir configs debug=overfit   # try overfitting to 1 batch
   ```
 
 ## Tests are specs

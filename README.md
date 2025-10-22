@@ -158,7 +158,9 @@ pip install -r requirements.txt
 ```
 
 Template contains example with MNIST classification.<br>
-When running `python ml_core/train.py` you should see something like this:
+When running `python ml_core/train.py --config-dir configs` you should see something like this:
+
+> Note: Always include `--config-dir configs` when invoking `ml_core/train.py` or `ml_core/eval.py` from the repo root. If you run from within the `ml_core/` directory, use `--config-dir ../configs` instead.
 
 <div align="center">
 
@@ -716,7 +718,7 @@ logger:
 3. Write your experiment config, containing paths to model and datamodule
 4. Run training with chosen experiment config:
    ```bash
-   python ml_core/train.py experiment=experiment_name.yaml
+   python ml_core/train.py --config-dir configs experiment=experiment_name.yaml
    ```
 
 **Experiment design**
@@ -1324,20 +1326,20 @@ Train model with default configuration
 
 ```bash
 # train on CPU
-python ml_core/train.py trainer=cpu
+python ml_core/train.py --config-dir configs trainer=cpu
 
 # train on GPU
-python ml_core/train.py trainer=gpu
+python ml_core/train.py --config-dir configs trainer=gpu
 ```
 
 Train model with chosen experiment configuration from [configs/experiment/](configs/experiment/)
 
 ```bash
-python ml_core/train.py experiment=experiment_name.yaml
+python ml_core/train.py --config-dir configs experiment=experiment_name.yaml
 ```
 
 You can override any parameter from command line like this
 
 ```bash
-python ml_core/train.py trainer.max_epochs=20 data.batch_size=64
+python ml_core/train.py --config-dir configs trainer.max_epochs=20 data.batch_size=64
 ```

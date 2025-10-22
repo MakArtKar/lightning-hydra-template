@@ -30,7 +30,7 @@ test-full: ## Run all tests
 	pytest
 
 train: ## Train the model
-	python ml_core/train.py
+	python ml_core/train.py --config-dir configs experiment=example
 
 # --- Local CI via act (Ubuntu-only) --- #
 ci-list-tests: ## List jobs in tests workflow (act)

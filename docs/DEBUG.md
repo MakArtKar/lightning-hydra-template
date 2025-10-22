@@ -15,7 +15,7 @@ pip install -r requirements.txt
 Use the fast dev run profile (`fdr`) to quickly validate your setup and code changes:
 
 ```bash
-python -m ml_core.train experiment=example debug=fdr
+python -m ml_core.train --config-dir configs experiment=example debug=fdr
 ```
 
 ### Adjust debug settings

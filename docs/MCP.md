@@ -45,7 +45,7 @@ Link back to the agent execution loop in `AGENTS.md` for step-by-step workflow a
 ### Workflow integration
 
 - Follow `AGENTS.md` execution loop (venv, deps, format, tests) and use MCP only where it adds value.
-- For functional checks, prefer local runs (e.g., `python ml_core/train.py debug=fdr`) and attach MCP captures only when they provide additional insight.
+- For functional checks, prefer local runs (e.g., `python ml_core/train.py --config-dir configs debug=fdr`) and attach MCP captures only when they provide additional insight.
 
 ### Quick verification
 

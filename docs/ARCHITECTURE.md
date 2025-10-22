@@ -67,8 +67,8 @@ The stable, documented import surface will live in `ml_core/__init__.py` (see Ta
 
 - Use Hydra configs in `configs/` to select data modules, models, transforms, callbacks, trainers, and loggers.
 - Entry points:
-  - `python ml_core/train.py` for training
-  - `python ml_core/eval.py` for evaluation
+  - `python ml_core/train.py --config-dir configs` for training
+  - `python ml_core/eval.py --config-dir configs` for evaluation
 - Debug presets in `configs/debug/` (e.g., `debug=fdr`, `debug=limit`) enable quick local runs.
 
 ### Non‑goals

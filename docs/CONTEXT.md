@@ -29,7 +29,7 @@ python -m venv .venv && source .venv/bin/activate
 pip install -r requirements.txt
 
 # Quick functional smoke
-python ml_core/train.py debug=fdr
+python ml_core/train.py --config-dir configs debug=fdr
 
 # Local checks
 make format
