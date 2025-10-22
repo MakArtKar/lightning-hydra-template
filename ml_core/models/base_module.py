@@ -1,4 +1,4 @@
-from typing import Any, Callable, Literal, Mapping
+from typing import Any, Callable, Iterator, Literal, Mapping
 
 import torch
 from lightning import LightningModule
@@ -19,9 +19,10 @@ class BaseLitModule(LightningModule):
         self,
         forward_fn: Callable[[Mapping[str, Any]], Mapping[str, Any]],
         criterions: CriterionsComposition,
-        optimizer: Callable[[], torch.optim.Optimizer],
+        optimizer: Callable[[Iterator[torch.nn.Parameter]], torch.optim.Optimizer],
         scheduler: (
-            Callable[[torch.optim.Optimizer], torch.optim.lr_scheduler.LRScheduler] | None
+            Callable[[torch.optim.Optimizer], torch.optim.lr_scheduler.LRScheduler]
+            | None
         ) = None,
         metrics: MetricsComposition | None = None,
         tracked_metric_name: str | None = None,
@@ -54,9 +55,9 @@ class BaseLitModule(LightningModule):
             criterion_name: MeanMetric() for criterion_name in self.criterions.keys()
         }
         # MetricCollection expects Mapping[str, Metric | MetricCollection]
-        self.train_losses = MetricCollection({**base_losses, "total": MeanMetric()}).clone(
-            "train/"
-        )
+        self.train_losses = MetricCollection(
+            {**base_losses, "total": MeanMetric()}
+        ).clone("train/")
         self.val_losses = self.train_losses.clone("val/")
         self.test_losses = self.train_losses.clone("test/")
 
@@ -65,7 +66,14 @@ class BaseLitModule(LightningModule):
         )
 
         if tracked_metric_name is not None and metrics is None:
-            raise ValueError("`tracked_metric_name` should be None in case null metrics")
+            raise ValueError(
+                "`tracked_metric_name` should be None in case null metrics"
+            )
+
+        self.tracked_metric_name = tracked_metric_name
+        self.optimizer_fn = optimizer
+        self.scheduler_fn = scheduler
+        self.compile_flag = compile
 
     def forward(self, batch: Mapping[str, Any]) -> Mapping[str, Any]:
         """Forward pass producing a dict-like output expected by losses/metrics.
@@ -124,11 +132,15 @@ class BaseLitModule(LightningModule):
 
         return {"loss": losses["total"], **batch}
 
-    def training_step(self, batch: Mapping[str, Any], batch_idx: int) -> Mapping[str, Any]:
+    def training_step(
+        self, batch: Mapping[str, Any], batch_idx: int
+    ) -> Mapping[str, Any]:
         """Lightning training step producing a mapping with at least a 'loss' key."""
         return self.model_step(batch, "train")
 
-    def validation_step(self, batch: Mapping[str, Any], batch_idx: int) -> Mapping[str, Any]:
+    def validation_step(
+        self, batch: Mapping[str, Any], batch_idx: int
+    ) -> Mapping[str, Any]:
         """Lightning validation step producing a mapping with at least a 'loss' key."""
         return self.model_step(batch, "val")
 
@@ -138,7 +150,7 @@ class BaseLitModule(LightningModule):
 
     def on_validation_epoch_end(self) -> None:
         """Compute and log best validation metric at epoch end."""
-        metric_key = self.hparams.tracked_metric_name  # type: ignore
+        metric_key = getattr(self.hparams, "tracked_metric_name", None)
         if metric_key is None or not hasattr(self, "val_metrics"):
             tracked_metric = self.val_losses["total"]
         else:
@@ -156,19 +168,19 @@ class BaseLitModule(LightningModule):
 
     def setup(self, stage: str) -> None:
         """Optionally compile the wrapped forward callable in fit stage."""
-        if self.hparams.compile and stage == "fit":  # type: ignore
+        if self.compile_flag and stage == "fit":
             self.forward_fn = torch.compile(self.forward_fn)
 
     def configure_optimizers(self) -> Any:
         """Create optimizer and (optionally) LR scheduler config for Trainer."""
-        optimizer = self.hparams.optimizer(params=self.parameters())  # type: ignore
-        if self.hparams.scheduler is not None:  # type: ignore
-            scheduler = self.hparams.scheduler(optimizer=optimizer)  # type: ignore
+        optimizer = self.optimizer_fn(self.parameters())
+        if self.scheduler_fn is not None:
+            scheduler = self.scheduler_fn(optimizer)
             return {
                 "optimizer": optimizer,
                 "lr_scheduler": {
                     "scheduler": scheduler,
-                    "monitor": f"val/{self.hparams.tracked_metric_name or 'loss'}",  # type: ignore
+                    "monitor": f"val/{self.tracked_metric_name or 'total'}",
                     "interval": "epoch",
                     "frequency": 1,
                 },

@@ -102,7 +102,9 @@ def task_wrapper(task_func: Callable) -> Callable:
     return wrap
 
 
-def get_metric_value(metric_dict: Dict[str, Any], metric_name: Optional[str]) -> Optional[float]:
+def get_metric_value(
+    metric_dict: Dict[str, Any], metric_name: Optional[str]
+) -> Optional[float]:
     """Safely retrieve value of a metric logged in LightningModule.
 
     :param metric_dict: A dict containing metric values.
@@ -120,7 +122,10 @@ def get_metric_value(metric_dict: Dict[str, Any], metric_name: Optional[str]) ->
             "Make sure `optimized_metric` name in `hparams_search` config is correct!"
         )
 
-    metric_value = metric_dict[metric_name].item()
+    value_obj = metric_dict[metric_name]
+    metric_value = (
+        float(value_obj.item()) if hasattr(value_obj, "item") else float(value_obj)
+    )
     log.info(f"Retrieved metric value! <{metric_name}={metric_value}>")
 
-    return metric_value  # type: ignore
+    return metric_value
