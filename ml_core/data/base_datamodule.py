@@ -19,7 +19,7 @@ class BaseDataModule(LightningDataModule):
         hf_dict_dataset: DatasetDict,
         val_ratio: float = 0.1,
         transform: Callable | None = None,
-        **dataloader_kwargs: dict[str, Any],
+        **dataloader_kwargs: Any,
     ) -> None:
         """Initialize the data module with datasets and loader settings.
 
@@ -30,7 +30,7 @@ class BaseDataModule(LightningDataModule):
         """
         super().__init__()
 
-        self.save_hyperparameters(logger=False, ignore=dataloader_kwargs.keys())
+        self.save_hyperparameters(logger=False, ignore=list(dataloader_kwargs.keys()))
 
         self.hf_dict_dataset = hf_dict_dataset
         self.val_ratio = val_ratio
@@ -75,6 +75,7 @@ class BaseDataModule(LightningDataModule):
 
         :return: The train dataloader.
         """
+        assert self.data_train is not None
         return DataLoader(
             dataset=self.data_train,
             **self.dataloader_kwargs,
@@ -86,6 +87,7 @@ class BaseDataModule(LightningDataModule):
 
         :return: The validation dataloader.
         """
+        assert self.data_val is not None
         return DataLoader(
             dataset=self.data_val,
             **self.dataloader_kwargs,
@@ -97,6 +99,7 @@ class BaseDataModule(LightningDataModule):
 
         :return: The test dataloader.
         """
+        assert self.data_test is not None
         return DataLoader(
             dataset=self.data_test,
             **self.dataloader_kwargs,

@@ -19,7 +19,7 @@ class RenameTransform(nn.Module):
         super().__init__()
         self.mapping = mapping
 
-    def __call__(self, batch: Mapping[str, Any]) -> Mapping[str, Any]:
+    def __call__(self, batch: dict[str, Any]) -> dict[str, Any]:
         """Return a new dict with keys renamed according to mapping."""
         return {new_key: batch[old_key] for old_key, new_key in self.mapping.items()}
 
@@ -30,7 +30,7 @@ class ComposeTransform(nn.Module):
     :param transforms: Named sub-transforms applied in insertion order.
     """
 
-    def __init__(self, **transforms) -> None:
+    def __init__(self, **transforms: nn.Module) -> None:
         """Initialize the composed transform container.
 
         :param transforms: Keyword-named transforms applied sequentially.
@@ -38,7 +38,7 @@ class ComposeTransform(nn.Module):
         super().__init__()
         self.transforms = nn.ModuleDict(transforms)
 
-    def __call__(self, batch: Mapping[str, Any]) -> Mapping[str, Any]:
+    def __call__(self, batch: dict[str, Any]) -> dict[str, Any]:
         """Apply contained transforms sequentially, merging their outputs."""
         for transform in self.transforms.values():
             batch = batch | transform(batch)
@@ -67,7 +67,7 @@ class WrapTransform(nn.Module):
         self.new_key = new_key
         self.mapping = mapping
 
-    def __call__(self, batch: Mapping[str, Any]) -> Mapping[str, Any]:
+    def __call__(self, batch: dict[str, Any]) -> dict[str, Any]:
         """Build kwargs from mapping, call the underlying transform, store output."""
         if self.mapping is not None:
             input_batch = {new_key: batch[old_key] for old_key, new_key in self.mapping.items()}

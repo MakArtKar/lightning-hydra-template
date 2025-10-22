@@ -60,7 +60,7 @@ class MetricsComposition(MetricCollection):
         super().__init__(dict(metrics))
         self.mapping = mapping
 
-    def forward(self, batch) -> dict[str, Any]:
+    def forward(self, batch: dict[str, Any]) -> dict[str, Any]:
         """Evaluate metrics using remapped fields and return their values."""
         result = {}
         for name in self._modules.keys():

@@ -5,7 +5,7 @@ from pathlib import Path
 from setuptools import find_packages, setup
 
 
-def read_requirements():
+def read_requirements() -> list[str]:
     requirements_file = Path(__file__).parent / "requirements.txt"
     with requirements_file.open() as f:
         requirements = []
