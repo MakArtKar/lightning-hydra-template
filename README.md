@@ -8,21 +8,23 @@
 [![hydra](https://img.shields.io/badge/Config-Hydra_1.3-89b8cd)](https://hydra.cc/)
 [![black](https://img.shields.io/badge/Code%20Style-Black-black.svg?labelColor=gray)](https://black.readthedocs.io/en/stable/)
 [![isort](https://img.shields.io/badge/%20imports-isort-%231674b1?style=flat&labelColor=ef8336)](https://pycqa.github.io/isort/) <br>
-[![tests](https://github.com/ashleve/lightning-hydra-template/actions/workflows/test.yml/badge.svg)](https://github.com/ashleve/lightning-hydra-template/actions/workflows/test.yml)
-[![code-quality](https://github.com/ashleve/lightning-hydra-template/actions/workflows/code-quality-main.yaml/badge.svg)](https://github.com/ashleve/lightning-hydra-template/actions/workflows/code-quality-main.yaml)
-[![codecov](https://codecov.io/gh/ashleve/lightning-hydra-template/branch/main/graph/badge.svg)](https://codecov.io/gh/ashleve/lightning-hydra-template) <br>
-[![license](https://img.shields.io/badge/License-MIT-green.svg?labelColor=gray)](https://github.com/ashleve/lightning-hydra-template#license)
-[![PRs](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)](https://github.com/ashleve/lightning-hydra-template/pulls)
-[![contributors](https://img.shields.io/github/contributors/ashleve/lightning-hydra-template.svg)](https://github.com/ashleve/lightning-hydra-template/graphs/contributors)
+[![tests](https://github.com/ashleve/lightning-hydra-template/actions/workflows/test.yml/badge.svg)](https://github.com/MakArtKar/lightning-hydra-template/actions/workflows/test.yml)
+[![code-quality](https://github.com/ashleve/lightning-hydra-template/actions/workflows/code-quality-main.yaml/badge.svg)](https://github.com/MakArtKar/lightning-hydra-template/actions/workflows/code-quality-main.yaml)
+[![codecov](https://codecov.io/gh/ashleve/lightning-hydra-template/branch/main/graph/badge.svg)](https://codecov.io/gh/MakArtKar/lightning-hydra-template) <br>
+[![license](https://img.shields.io/badge/License-MIT-green.svg?labelColor=gray)](https://github.com/MakArtKar/lightning-hydra-template#license)
+[![PRs](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)](https://github.com/MakArtKar/lightning-hydra-template/pulls)
+[![contributors](https://img.shields.io/github/contributors/ashleve/lightning-hydra-template.svg)](https://github.com/MakArtKar/lightning-hydra-template/graphs/contributors)
 
 A clean template to kickstart your deep learning project 🚀⚡🔥<br>
-Click on [<kbd>Use this template</kbd>](https://github.com/ashleve/lightning-hydra-template/generate) to initialize new repository.
+Click on [<kbd>Use this template</kbd>](https://github.com/MakArtKar/lightning-hydra-template/generate) to initialize new repository.
 
 _Suggestions are always welcome!_
 
 </div>
 
 <br>
+
+> Note: This repository is a fork of [ashleve/lightning-hydra-template](https://github.com/ashleve/lightning-hydra-template).
 
 ## 📌  Introduction
 
@@ -141,7 +143,7 @@ The directory structure of new project looks like this:
 
 ```bash
 # clone project
-git clone https://github.com/ashleve/lightning-hydra-template
+git clone https://github.com/MakArtKar/lightning-hydra-template
 cd lightning-hydra-template
 
 # [OPTIONAL] create conda environment
@@ -540,6 +542,50 @@ python train.py model=mnist
 ```
 
 Example pipeline managing the instantiation logic: [ml_core/train.py](ml_core/train.py).
+
+<br>
+
+## Base Modules
+
+### `BaseLitModule`
+
+Generic LightningModule wiring forward, losses, metrics, and optimizers. Provides common training/validation/test steps and tracks the best validation metric.
+
+- Parameters:
+
+  - `forward_fn` (Callable): maps a batch to outputs (e.g., network forward). Can be composed via transforms.
+  - `criterions` (`CriterionsComposition`): computes named losses and a weighted `total` from batch mapping.
+  - `optimizer` (Callable): factory returning a configured optimizer for model parameters.
+  - `scheduler` (Callable | None): optional LR scheduler factory; monitored on `val/{tracked_metric_name or 'loss'}`.
+  - `metrics` (`MetricsComposition` | None): optional metric collection applied per stage (`train/`, `val/`, `test/`).
+  - `tracked_metric_name` (str | None): metric key (without stage prefix) used to compute and log `val/best`; if `None`, tracks total validation loss.
+  - `compile` (bool): if True, compiles `forward_fn` with `torch.compile` during fit.
+
+- Functionality:
+
+  - Steps: shared `model_step` applies `forward_fn`, computes and logs losses and metrics with `sync_dist=True`.
+  - Logging: per-loss means and per-metric values on epoch; best metric logged as `val/best`.
+  - Optimizers: builds optimizer and optional scheduler config for Trainer.
+
+See `ml_core/models/base_module.py` and example config `configs/model/mnist.yaml`.
+
+### `BaseDataModule`
+
+LightningDataModule that wraps a Hugging Face `DatasetDict`, splits train/val, and builds DataLoaders; divides batch size across devices in distributed runs and supports optional on-the-fly transforms via `with_transform`.
+
+- Parameters:
+
+  - `hf_dict_dataset` (`datasets.DatasetDict`): preloaded HF dataset with `train` and `test` splits.
+  - `val_ratio` (float, default 0.1): fraction of train used for validation.
+  - `transform` (Callable | None): optional mapping transform applied with `with_transform` (`output_all_columns=True`).
+  - `**dataloader_kwargs`: forwarded to `torch.utils.data.DataLoader` (e.g., `batch_size`, `num_workers`, `pin_memory`).
+
+- Functionality:
+
+  - `setup`: divides batch size by `trainer.world_size` (ensures divisibility), splits datasets only once.
+  - `train_dataloader`/`val_dataloader`/`test_dataloader`: return DataLoaders with appropriate `shuffle`.
+
+See `ml_core/data/base_datamodule.py`.
 
 <br>
 
@@ -1228,7 +1274,7 @@ ______________________________________________________________________
 <a href="https://pytorch.org/get-started/locally/"><img alt="PyTorch" src="https://img.shields.io/badge/PyTorch-ee4c2c?logo=pytorch&logoColor=white"></a>
 <a href="https://pytorchlightning.ai/"><img alt="Lightning" src="https://img.shields.io/badge/-Lightning-792ee5?logo=pytorchlightning&logoColor=white"></a>
 <a href="https://hydra.cc/"><img alt="Config: Hydra" src="https://img.shields.io/badge/Config-Hydra-89b8cd"></a>
-<a href="https://github.com/ashleve/lightning-hydra-template"><img alt="Template" src="https://img.shields.io/badge/-Lightning--Hydra--Template-017F2F?style=flat&logo=github&labelColor=gray"></a><br>
+<a href="https://github.com/MakArtKar/lightning-hydra-template"><img alt="Template" src="https://img.shields.io/badge/-Lightning--Hydra--Template-017F2F?style=flat&logo=github&labelColor=gray"></a><br>
 [![Paper](http://img.shields.io/badge/paper-arxiv.1001.2234-B31B1B.svg)](https://www.nature.com/articles/nature14539)
 [![Conference](http://img.shields.io/badge/AnyConference-year-4b44ce.svg)](https://papers.nips.cc/paper/2020)
 
