@@ -23,8 +23,8 @@ sync: ## Merge changes from main branch to your current branch
 	git pull
 	git pull origin main
 
-test: ## Run not slow tests
-	pytest -k "not slow"
+test: ## Run not slow tests (xdist, quiet)
+	. .venv/bin/activate; pytest -n auto -m "not slow" -q
 
 test-full: ## Run all tests
 	pytest
@@ -69,3 +69,25 @@ checker: ## Run local format, tests, and CI mirror (skips parts if tooling missi
 	else \
 		echo "act not installed, skipping local CI"; \
 	fi
+
+# --- Developer environment (.venv-first) --- #
+venv: ## Create .venv and upgrade pip
+	python3 -m venv .venv
+	. .venv/bin/activate; python -m pip install --upgrade pip
+
+install-dev: venv ## Install project + dev requirements and setup pre-commit
+	. .venv/bin/activate; python -m pip install -r requirements.txt -r requirements-dev.txt
+	. .venv/bin/activate; pre-commit install
+
+lint: ## Run ruff checks and formatting checks
+	. .venv/bin/activate; ruff check .
+	. .venv/bin/activate; ruff format --check .
+
+typecheck: ## Run mypy type checks
+	. .venv/bin/activate; mypy
+
+precommit: ## Run all pre-commit hooks on all files
+	. .venv/bin/activate; pre-commit run --all-files
+
+lint-arch: ## Run import-linter architecture checks
+	. .venv/bin/activate; lint-imports
