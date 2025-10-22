@@ -84,7 +84,7 @@ lint: ## Run ruff checks and formatting checks
 	. .venv/bin/activate; ruff format --check .
 
 typecheck: ## Run mypy type checks
-	. .venv/bin/activate; mypy
+	. .venv/bin/activate; mypy .
 
 precommit: ## Run all pre-commit hooks on all files
 	. .venv/bin/activate; pre-commit run --all-files
