@@ -1,0 +1,10 @@
+# Bandit configuration (minimal, expand later)
+# See: https://bandit.readthedocs.io/en/latest/config.html
+
+skips: []
+exclude_dirs:
+  - .venv
+  - logs
+  - data
+  - node_modules
+  - ml_core.egg-info
