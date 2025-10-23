@@ -77,9 +77,53 @@ Short, actionable runbook for agents collaborating in this repository.
 - Use minimal, runnable commands; avoid large log dumps.
 - Use tags in Hydra runs when helpful: `python ml_core/train.py --config-dir configs tags=["dev"]`.
 
-## Context kits (stub)
+## Context Kits
 
-- Will be expanded in Task 16: curated pointers for common workflows (data, models, trainers, loggers).
+- Training loop tweaks
+
+  - Files to open:
+    - `ml_core/train.py`
+    - `ml_core/models/base_module.py`
+    - `configs/model/*.yaml`
+    - `configs/trainer/*.yaml`
+  - Sample ripgrep searches:
+    - `rg -n "training_step|validation_step|test_step" ml_core/models`
+    - `rg -n "configure_optimizers|optimizer|lr_scheduler" ml_core/models`
+    - `rg -n "Trainer|fit\\(" ml_core/train.py`
+  - Quick debug run:
+    - `python -m ml_core.train --config-dir configs experiment=example debug=fdr`
+
+- Data pipeline changes
+
+  - Files to open:
+    - `ml_core/data/`
+    - `ml_core/transforms/`
+    - `configs/data/*.yaml`
+  - Sample ripgrep searches:
+    - `rg -n "DataModule|setup|prepare_data" ml_core/data`
+    - `rg -n "train_dataloader|val_dataloader|test_dataloader" ml_core/data`
+    - `rg -n "transform|Compose|Normalize" ml_core/transforms`
+    - `rg -n "batch_size|num_workers" configs/data configs/trainer`
+  - Quick debug run:
+    - `python -m ml_core.train --config-dir configs experiment=example debug=fdr`
+
+- Metrics/loss changes
+
+  - Files to open:
+    - `ml_core/models/utils.py`
+    - `ml_core/models/components/`
+  - Sample ripgrep searches:
+    - `rg -n "loss" ml_core/models`
+    - `rg -n "metric|Accuracy|F1|Precision|Recall" ml_core/models`
+    - `rg -n "log\\(" ml_core/models`
+  - Quick debug run:
+    - `python -m ml_core.train --config-dir configs experiment=example debug=fdr`
+
+- Debug runs
+
+  - See `docs/DEBUG.md` for details and additional profiles.
+  - Fast dev run command:
+    - `python -m ml_core.train --config-dir configs experiment=example debug=fdr`
 
 ## References (future docs to be added)
 
