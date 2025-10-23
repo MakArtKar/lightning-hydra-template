@@ -32,7 +32,16 @@ repos:
       - id: gitleaks
         name: gitleaks (secrets)
         args:
-          ["detect", "--no-banner", "--source", ".", "--report-format", "json"]
+          [
+            "detect",
+            "--no-banner",
+            "--source",
+            ".",
+            "--report-format",
+            "json",
+            "--config",
+            "gitleaks.toml",
+          ]
         stages: [commit, push, manual]
 
   # Semgrep: security and correctness patterns
@@ -40,7 +49,7 @@ repos:
     rev: v1.82.0
     hooks:
       - id: semgrep
-        args: ["--config=auto", "--severity=ERROR", "--error"]
+        args: ["--config=.semgrep.yml", "--severity=ERROR", "--error"]
         additional_dependencies: []
         exclude: |
           ^logs/|^data/|^node_modules/|^ml_core\.egg-info/
@@ -53,6 +62,8 @@ repos:
         args:
           [
             "-q",
+            "-c",
+            "bandit.yaml",
             "-s",
             "B101",
             "-x",

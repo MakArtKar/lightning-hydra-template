@@ -1,0 +1,35 @@
+# Minimal Semgrep ruleset for Python security issues
+# Keep fast; expand later as needed
+
+rules:
+  - id: py-avoid-eval
+    languages: [python]
+    message: Avoid use of eval(); it's dangerous.
+    severity: ERROR
+    pattern: eval(...)
+
+  - id: py-tempfile-mktemp
+    languages: [python]
+    message: Use tempfile.NamedTemporaryFile() or mkstemp() instead of mktemp().
+    severity: WARNING
+    pattern: tempfile.mktemp(...)
+
+  - id: py-subprocess-no-shell-true
+    languages: [python]
+    message: Avoid shell=True with subprocess calls.
+    severity: WARNING
+    patterns:
+      - pattern-either:
+          - pattern: subprocess.run(..., shell=True, ...)
+          - pattern: subprocess.Popen(..., shell=True, ...)
+          - pattern: subprocess.call(..., shell=True, ...)
+          - pattern: subprocess.check_call(..., shell=True, ...)
+          - pattern: subprocess.check_output(..., shell=True, ...)
+
+  - id: py-hashlib-insecure
+    languages: [python]
+    message: Use secure hashes (sha256/512) over md5/sha1.
+    severity: WARNING
+    pattern-either:
+      - pattern: hashlib.md5(...)
+      - pattern: hashlib.sha1(...)
