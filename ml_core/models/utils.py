@@ -36,7 +36,8 @@ class CriterionsComposition(nn.Module):
         losses = {}
         for name, criterion in self.criterions.items():
             input_batch = {
-                new_key: batch[old_key] for old_key, new_key in self.mapping[name].items()
+                new_key: batch[old_key]
+                for old_key, new_key in self.mapping[name].items()
             }
             losses[name] = criterion(**input_batch)
             total_loss += self.weights[name] * losses[name]
@@ -65,7 +66,8 @@ class MetricsComposition(MetricCollection):
         result = {}
         for name in self._modules.keys():
             input_batch = {
-                new_key: batch[old_key] for old_key, new_key in self.mapping[name].items()
+                new_key: batch[old_key]
+                for old_key, new_key in self.mapping[name].items()
             }
             result[name] = self._modules[name](**input_batch)
         return result
