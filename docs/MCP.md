@@ -50,6 +50,6 @@ Link back to the agent execution loop in `AGENTS.md` for step-by-step workflow a
 ### Quick verification
 
 ```bash
-cd /Users/Artem.Makoian/work/bayes_group/lightning-hydra-template
+# From repository root
 test -f docs/MCP.md && echo "OK"
 ```

@@ -8,15 +8,17 @@ Concise prompts to quickly understand and validate the system design. Use these 
 - **Where are they enforced?** Point to assertions, guards, and tests (e.g., `ml_core/models/base_module.py`, `ml_core/data/base_datamodule.py`).
 - **How are violations detected?** Unit tests, type checks, runtime asserts, or callbacks.
 - Quick scans:
-  - `rg -n "assert|raise|invariant|validate" /Users/Artem.Makoian/work/bayes_group/lightning-hydra-template/ml_core`
+  - `rg -n "assert|raise|invariant|validate" ml_core`
 
 ### Module dependencies
 
 - **What layers may depend on which?** Define allowed directions (e.g., `utils` -> used by all; `models` must not import `data`; configs should not import code).
 - **Where are rules documented/enforced?** Link to docs or tooling (e.g., import-linter, mypy boundaries).
 - Quick scans:
-  - `rg -n "^from ml_core|^import ml_core" /Users/Artem.Makoian/work/bayes_group/lightning-hydra-template`
-  - See `local/ai_coding_init/10_import_linter_config.md` and `local/ai_coding_init/11_mypy_config.md`.
+  - `rg -n "^from ml_core|^import ml_core" .`
+- Configuration:
+  - See `architecture/importlinter.ini` for import rules
+  - See `mypy.ini` for type checking configuration
 
 ### Extension points and stability
 
@@ -40,8 +42,8 @@ Concise prompts to quickly understand and validate the system design. Use these 
 - **Schemas:** Config keys in `configs/*`, required/optional fields, defaults.
 - **Failure modes:** Missing data, NaNs/Infs, empty batches, incompatible shapes; where handled.
 - Quick scans:
-  - `rg -n "->\s*torch\.Tensor|torch\.Tensor\]" /Users/Artem.Makoian/work/bayes_group/lightning-hydra-template/ml_core --type py`
-  - `rg -n "batch\[|x\]|y\]" /Users/Artem.Makoian/work/bayes_group/lightning-hydra-template/ml_core --type py`
+  - `rg -n "->\s*torch\.Tensor|torch\.Tensor\]" ml_core --type py`
+  - `rg -n "batch\[|x\]|y\]" ml_core --type py`
 
 ### Hydra configuration boundaries
 

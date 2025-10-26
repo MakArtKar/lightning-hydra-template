@@ -12,23 +12,23 @@ Keep context lean, precise, and reproducible. Use exact file paths and focused c
 ### Practical patterns
 
 - **Find class/function definitions**
-  - `rg -n "class BaseLitModule" /Users/Artem.Makoian/work/bayes_group/lightning-hydra-template/ml_core`
-  - `rg -n "def (train|validation)_step\(" /Users/Artem.Makoian/work/bayes_group/lightning-hydra-template/ml_core --pcre2`
+  - `rg -n "class BaseLitModule" ml_core`
+  - `rg -n "def (train|validation)_step\(" ml_core --pcre2`
 - **Locate Hydra configs and specific keys**
-  - `rg -n "trainer:|callbacks:|logger:" /Users/Artem.Makoian/work/bayes_group/lightning-hydra-template/configs`
+  - `rg -n "trainer:|callbacks:|logger:" configs`
 - **Trace import relationships**
-  - `rg -n "^from ml_core|^import ml_core" /Users/Artem.Makoian/work/bayes_group/lightning-hydra-template`
+  - `rg -n "^from ml_core|^import ml_core" .`
 
 ### Reproducible environment and runs
 
-Use absolute paths and `.venv`.
+Always use `.venv` from the repository root.
 
 ```bash
-cd /Users/Artem.Makoian/work/bayes_group/lightning-hydra-template
+# From repository root
 python -m venv .venv && source .venv/bin/activate
 pip install -r requirements.txt
 
-# Quick functional smoke
+# Quick functional smoke test
 python ml_core/train.py --config-dir configs debug=fdr
 
 # Local checks

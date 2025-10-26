@@ -2,12 +2,10 @@
 
 This repository follows a security-first workflow. The goal is to prevent secret leakage, reduce vulnerable code, and handle incidents quickly and safely.
 
-Note: Security scanners and CI wiring are introduced in dedicated tasks (CI in Task 13, scanners in Task 14). This document sets expectations now and will be enforced automatically once those tasks land.
-
 ## Reporting a Vulnerability or Security Concern
 
-- Preferred contact: security@bayes-group.example (placeholder)
-- Alternative: open a private security advisory or contact the internal "#security" channel (placeholder)
+- Preferred: Open a private security advisory on GitHub
+- Alternative: Contact repository maintainers directly via private channels
 - Target response: within 2 business days
 
 Please include impacted files, commit SHAs, reproduction steps, and any logs that do not contain sensitive data.
@@ -20,22 +18,26 @@ Please include impacted files, commit SHAs, reproduction steps, and any logs tha
 
 ### If a Secret Leaks
 
-1. Revoke/rotate the credential at the provider immediately.
-2. Remove the secret from code and history (e.g., `git filter-repo` or BFG). Do not rely on a revert alone.
-3. Add replacement via environment variables or secret manager; never reintroduce secrets into VCS.
-4. Notify security owners at security@bayes-group.example with the commit SHA and scope.
-5. Review access logs for misuse and take follow-up actions (e.g., forced token/session invalidation).
+1. **Revoke immediately**: Rotate the credential at the provider right away.
+2. **Remove from history**: Use `git filter-repo` or BFG to purge the secret from git history. A simple revert is insufficient.
+3. **Replace securely**: Add the replacement via environment variables or a secret manager; never commit secrets to VCS.
+4. **Notify maintainers**: Contact repository maintainers with the commit SHA, affected files, and scope of exposure.
+5. **Audit access**: Review provider access logs for misuse and take appropriate follow-up actions (e.g., forced session invalidation).
 
-## Security Tooling (to be configured)
+## Security Tooling
 
-These tools will run locally via pre-commit and in CI once Tasks 13–14 are completed:
+These tools run locally via pre-commit and in CI:
 
 - gitleaks: secret scanning.
 - semgrep: static application security testing (SAST).
 - bandit: Python security linter for common issues.
 - Dependency audit: checks known CVEs (e.g., pip-audit or safety).
 
-All findings that meet defined severity thresholds will fail CI. Contributors should run the hooks locally before pushing.
+All findings that meet defined severity thresholds will fail CI. Contributors should run pre-commit hooks locally before pushing:
+
+```bash
+make format  # runs pre-commit on all files
+```
 
 ## Environments and Least Privilege
 
@@ -57,14 +59,19 @@ All findings that meet defined severity thresholds will fail CI. Contributors sh
 
 ## Developer Checklist (pre-push)
 
-- No secrets in code, configs, or examples.
-- Scanners and linters pass locally once configured (pre-commit/CI).
-- Logs and outputs do not contain sensitive data.
+- [ ] No secrets in code, configs, or examples
+- [ ] Pre-commit hooks pass locally (`make format`)
+- [ ] Tests pass (`make test`)
+- [ ] Logs and outputs do not contain sensitive data
 
-## Verification
+## Quick Verification
 
-To verify this policy file exists:
+Verify security configuration:
 
 ```bash
-test -f docs/SECURITY.md && echo "OK"
+# From repository root
+test -f docs/SECURITY.md && echo "Security policy: OK"
+test -f gitleaks.toml && echo "Gitleaks config: OK"
+test -f bandit.yaml && echo "Bandit config: OK"
+test -f .semgrep.yml && echo "Semgrep config: OK"
 ```
