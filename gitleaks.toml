@@ -1,0 +1,14 @@
+# Gitleaks configuration
+
+[allowlist]
+paths = [
+  '''^logs/''',
+  '''^data/'''
+]
+
+[[rules]]
+id = "generic-api-key"
+description = "Generic API Key or secret-like token"
+regex = '''(?i)(api[_-]?key|access[_-]?token|secret|token)[^a-zA-Z0-9]{0,20}([a-zA-Z0-9_\-]{16,64})'''
+keywords = ["api_key", "apikey", "access_token", "secret", "token"]
+tags = ["key", "api", "token"]

@@ -1,5 +1,7 @@
 """A simple fully-connected neural net for computing predictions."""
 
+from typing import cast
+
 import torch
 from torch import nn
 
@@ -49,7 +51,7 @@ class SimpleDenseNet(nn.Module):
         # (batch, 1, width, height) -> (batch, 1*width*height)
         x = x.view(batch_size, -1)
 
-        return self.model(x)
+        return cast(torch.Tensor, self.model(x))
 
 
 if __name__ == "__main__":

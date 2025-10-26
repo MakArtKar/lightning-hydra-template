@@ -1,3 +1,6 @@
+ACT_UBUNTU_IMAGE ?= ghcr.io/catthehacker/ubuntu:act-22.04
+ACT_FLAGS ?= --container-architecture linux/amd64 -P ubuntu-latest=$(ACT_UBUNTU_IMAGE) -P macos-latest=$(ACT_UBUNTU_IMAGE) -P windows-latest=$(ACT_UBUNTU_IMAGE)
+
 
 help:  ## Show help
 	@grep -E '^[.a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## "}; {printf "\033[36m%-30s\033[0m %s\n", $$1, $$2}'
@@ -20,11 +23,71 @@ sync: ## Merge changes from main branch to your current branch
 	git pull
 	git pull origin main
 
-test: ## Run not slow tests
-	pytest -k "not slow"
+test: ## Run not slow tests (xdist, quiet)
+	. .venv/bin/activate; pytest -n auto -m "not slow" -q
 
 test-full: ## Run all tests
 	pytest
 
 train: ## Train the model
-	python ml_core/train.py
+	python ml_core/train.py --config-dir configs experiment=example
+
+# --- Local CI via act (Ubuntu-only) --- #
+ci-list-tests: ## List jobs in tests workflow (act)
+	act $(ACT_FLAGS) -l -W .github/workflows/test.yml
+
+ci-tests-ubuntu: ## Run Ubuntu test job locally (act)
+	act $(ACT_FLAGS) -j run_tests_ubuntu -W .github/workflows/test.yml
+
+ci-tests-macos: ## Run macOS test job locally (mapped to Ubuntu image)
+	act $(ACT_FLAGS) -j run_tests_macos -W .github/workflows/test.yml
+
+ci-tests-windows: ## Run Windows test job locally (mapped to Ubuntu image)
+	act $(ACT_FLAGS) -j run_tests_windows -W .github/workflows/test.yml
+
+ci-coverage: ## Run coverage job locally (act)
+	act $(ACT_FLAGS) -j code-coverage -W .github/workflows/test.yml || true
+
+ci-codequality-pr: ## Run Code Quality PR job locally (act)
+	act $(ACT_FLAGS) -j code-quality -W .github/workflows/code-quality-pr.yaml
+
+ci-codequality-main: ## Run Code Quality Main job locally (act)
+	act $(ACT_FLAGS) -j code-quality -W .github/workflows/code-quality-main.yaml
+
+ci-local: ## Run common CI locally (Ubuntu tests + Code Quality Main)
+	act $(ACT_FLAGS) -j run_tests_ubuntu -W .github/workflows/test.yml && act $(ACT_FLAGS) -j code-quality -W .github/workflows/code-quality-main.yaml
+
+checker: ## Run local format, tests, and CI mirror (skips parts if tooling missing)
+	@echo "[checker] Running format..."
+	@if command -v pre-commit >/dev/null 2>&1; then pre-commit run -a; else echo "pre-commit not installed, skipping format"; fi
+	@echo "[checker] Running tests..."
+	@if command -v pytest >/dev/null 2>&1; then pytest -k "not slow"; else echo "pytest not installed, skipping tests"; fi
+	@echo "[checker] Running local CI via act (may require Docker & act)..."
+	@if command -v act >/dev/null 2>&1; then \
+		act $(ACT_FLAGS) -j run_tests_ubuntu -W .github/workflows/test.yml && \
+		act $(ACT_FLAGS) -j code-quality -W .github/workflows/code-quality-main.yaml ; \
+	else \
+		echo "act not installed, skipping local CI"; \
+	fi
+
+# --- Developer environment (.venv-first) --- #
+venv: ## Create .venv and upgrade pip
+	python3 -m venv .venv
+	. .venv/bin/activate; python -m pip install --upgrade pip
+
+install-dev: venv ## Install project + dev requirements and setup pre-commit
+	. .venv/bin/activate; python -m pip install -r requirements.txt -r requirements-dev.txt
+	. .venv/bin/activate; pre-commit install
+
+lint: ## Run ruff checks and formatting checks
+	. .venv/bin/activate; ruff check .
+	. .venv/bin/activate; ruff format --check .
+
+typecheck: ## Run mypy type checks
+	. .venv/bin/activate; mypy .
+
+precommit: ## Run all pre-commit hooks on all files
+	. .venv/bin/activate; pre-commit run --all-files
+
+lint-arch: ## Run import-linter architecture checks
+	. .venv/bin/activate; lint-imports --config=architecture/importlinter.ini

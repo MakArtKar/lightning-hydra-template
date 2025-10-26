@@ -26,7 +26,7 @@ rootutils.setup_root(__file__, indicator=".project-root", pythonpath=True)
 # more info: https://github.com/ashleve/rootutils
 # ------------------------------------------------------------------------------------ #
 
-from ml_core.utils import (
+from ml_core.utils import (  # noqa: E402
     RankedLogger,
     extras,
     instantiate_loggers,

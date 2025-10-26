@@ -1,6 +1,6 @@
 """Image transforms adapters for dict-based mini-batches."""
 
-from typing import Any, Callable, Mapping
+from typing import Any, Callable
 
 import torch.nn as nn
 
@@ -22,7 +22,7 @@ class TorchVisionTransform(nn.Module):
         self.transform = transform
         self.key = key
 
-    def __call__(self, batch: Mapping[str, Any]) -> Mapping[str, Any]:
+    def __call__(self, batch: dict[str, Any]) -> dict[str, Any]:
         """Apply the transform to every element under `key` and return the batch.
 
         :param batch: Mapping including a sequence at `key` to be transformed.
