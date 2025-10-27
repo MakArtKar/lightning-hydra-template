@@ -1,19 +1,24 @@
 import os
 from pathlib import Path
+from typing import Dict
 
 import pytest
 from hydra.core.hydra_config import HydraConfig
 from omegaconf import DictConfig, open_dict
 
 from ml_core.train import train
+from tests.conftest import get_all_experiments
 from tests.helpers.run_if import RunIf
 
 
-def test_train_fast_dev_run(cfg_train: DictConfig) -> None:
+@pytest.mark.parametrize("experiment_path", get_all_experiments())
+def test_train_fast_dev_run(cfg_train: Dict[str, DictConfig], experiment_path: str) -> None:
     """Run for 1 train, val and test step.
 
-    :param cfg_train: A DictConfig containing a valid training configuration.
+    :param cfg_train: A dict mapping experiment paths to training configurations.
+    :param experiment_path: The experiment path to test.
     """
+    cfg_train = cfg_train[experiment_path]
     HydraConfig().set_config(cfg_train)
     with open_dict(cfg_train):
         cfg_train.trainer.fast_dev_run = True
@@ -21,12 +26,15 @@ def test_train_fast_dev_run(cfg_train: DictConfig) -> None:
     train(cfg_train)
 
 
+@pytest.mark.parametrize("experiment_path", get_all_experiments())
 @RunIf(min_gpus=1)
-def test_train_fast_dev_run_gpu(cfg_train: DictConfig) -> None:
+def test_train_fast_dev_run_gpu(cfg_train: Dict[str, DictConfig], experiment_path: str) -> None:
     """Run for 1 train, val and test step on GPU.
 
-    :param cfg_train: A DictConfig containing a valid training configuration.
+    :param cfg_train: A dict mapping experiment paths to training configurations.
+    :param experiment_path: The experiment path to test.
     """
+    cfg_train = cfg_train[experiment_path]
     HydraConfig().set_config(cfg_train)
     with open_dict(cfg_train):
         cfg_train.trainer.fast_dev_run = True
@@ -34,13 +42,16 @@ def test_train_fast_dev_run_gpu(cfg_train: DictConfig) -> None:
     train(cfg_train)
 
 
+@pytest.mark.parametrize("experiment_path", get_all_experiments())
 @RunIf(min_gpus=1)
 @pytest.mark.slow
-def test_train_epoch_gpu_amp(cfg_train: DictConfig) -> None:
+def test_train_epoch_gpu_amp(cfg_train: Dict[str, DictConfig], experiment_path: str) -> None:
     """Train 1 epoch on GPU with mixed-precision.
 
-    :param cfg_train: A DictConfig containing a valid training configuration.
+    :param cfg_train: A dict mapping experiment paths to training configurations.
+    :param experiment_path: The experiment path to test.
     """
+    cfg_train = cfg_train[experiment_path]
     HydraConfig().set_config(cfg_train)
     with open_dict(cfg_train):
         cfg_train.trainer.max_epochs = 1
@@ -49,12 +60,17 @@ def test_train_epoch_gpu_amp(cfg_train: DictConfig) -> None:
     train(cfg_train)
 
 
+@pytest.mark.parametrize("experiment_path", get_all_experiments())
 @pytest.mark.slow
-def test_train_epoch_double_val_loop(cfg_train: DictConfig) -> None:
+def test_train_epoch_double_val_loop(
+    cfg_train: Dict[str, DictConfig], experiment_path: str
+) -> None:
     """Train 1 epoch with validation loop twice per epoch.
 
-    :param cfg_train: A DictConfig containing a valid training configuration.
+    :param cfg_train: A dict mapping experiment paths to training configurations.
+    :param experiment_path: The experiment path to test.
     """
+    cfg_train = cfg_train[experiment_path]
     HydraConfig().set_config(cfg_train)
     with open_dict(cfg_train):
         cfg_train.trainer.max_epochs = 1
@@ -62,13 +78,16 @@ def test_train_epoch_double_val_loop(cfg_train: DictConfig) -> None:
     train(cfg_train)
 
 
+@pytest.mark.parametrize("experiment_path", get_all_experiments())
 @RunIf(skip_windows=True)
 @pytest.mark.slow
-def test_train_ddp_sim(cfg_train: DictConfig) -> None:
+def test_train_ddp_sim(cfg_train: Dict[str, DictConfig], experiment_path: str) -> None:
     """Simulate DDP (Distributed Data Parallel) on 2 CPU processes.
 
-    :param cfg_train: A DictConfig containing a valid training configuration.
+    :param cfg_train: A dict mapping experiment paths to training configurations.
+    :param experiment_path: The experiment path to test.
     """
+    cfg_train = cfg_train[experiment_path]
     HydraConfig().set_config(cfg_train)
     with open_dict(cfg_train):
         cfg_train.trainer.max_epochs = 2
@@ -78,13 +97,18 @@ def test_train_ddp_sim(cfg_train: DictConfig) -> None:
     train(cfg_train)
 
 
+@pytest.mark.parametrize("experiment_path", get_all_experiments())
 @pytest.mark.slow
-def test_train_resume(tmp_path: Path, cfg_train: DictConfig) -> None:
+def test_train_resume(
+    tmp_path: Path, cfg_train: Dict[str, DictConfig], experiment_path: str
+) -> None:
     """Run 1 epoch, finish, and resume for another epoch.
 
     :param tmp_path: The temporary logging path.
-    :param cfg_train: A DictConfig containing a valid training configuration.
+    :param cfg_train: A dict mapping experiment paths to training configurations.
+    :param experiment_path: The experiment path to test.
     """
+    cfg_train = cfg_train[experiment_path]
     with open_dict(cfg_train):
         cfg_train.trainer.max_epochs = 1
 

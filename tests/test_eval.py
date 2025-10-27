@@ -1,5 +1,6 @@
 import os
 from pathlib import Path
+from typing import Dict
 
 import pytest
 from hydra.core.hydra_config import HydraConfig
@@ -7,17 +8,28 @@ from omegaconf import DictConfig, open_dict
 
 from ml_core.eval import evaluate
 from ml_core.train import train
+from tests.conftest import get_all_experiments
 
 
+@pytest.mark.parametrize("experiment_path", get_all_experiments())
 @pytest.mark.slow
-def test_train_eval(tmp_path: Path, cfg_train: DictConfig, cfg_eval: DictConfig) -> None:
+def test_train_eval(
+    tmp_path: Path,
+    cfg_train: Dict[str, DictConfig],
+    cfg_eval: Dict[str, DictConfig],
+    experiment_path: str,
+) -> None:
     """Tests training and evaluation by training for 1 epoch with `train.py` then evaluating with
     `eval.py`.
 
     :param tmp_path: The temporary logging path.
-    :param cfg_train: A DictConfig containing a valid training configuration.
-    :param cfg_eval: A DictConfig containing a valid evaluation configuration.
+    :param cfg_train: A dict mapping experiment paths to training configurations.
+    :param cfg_eval: A dict mapping experiment paths to evaluation configurations.
+    :param experiment_path: The experiment path to test.
     """
+    cfg_train = cfg_train[experiment_path]
+    cfg_eval = cfg_eval[experiment_path]
+
     assert str(tmp_path) == cfg_train.paths.output_dir == cfg_eval.paths.output_dir
 
     with open_dict(cfg_train):
