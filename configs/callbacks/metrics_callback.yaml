@@ -1,0 +1,7 @@
+# Metrics callback for computing and logging metrics during training/validation/testing
+
+metrics_callback:
+  _target_: ml_core.callbacks.MetricsCallback
+  metrics: null # metrics composition to track, should be specified in experiment config
+  tracked_metric_name: null # metric to track for best model selection, if null tracks validation loss
+

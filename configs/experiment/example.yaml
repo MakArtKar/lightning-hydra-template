@@ -35,6 +35,21 @@ model:
 data:
   batch_size: 64
 
+callbacks:
+  metrics_callback:
+    tracked_metric_name: accuracy
+    metrics:
+      _target_: ml_core.models.utils.MetricsComposition
+      metrics:
+        accuracy:
+          _target_: torchmetrics.Accuracy
+          task: multiclass
+          num_classes: 10
+      mapping:
+        accuracy:
+          prediction: preds
+          label: target
+
 logger:
   wandb:
     tags: ${tags}
