@@ -27,6 +27,8 @@ ml_core/
 │   ├── base_module.py         # Generic LightningModule
 │   ├── utils.py               # Loss and metric compositions
 │   └── components/            # Model architectures
+├── callbacks/
+│   └── metrics_callback.py    # Metrics tracking callback
 ├── transforms/
 │   ├── base.py                # Generic dict-based transforms
 │   └── image.py               # Image-specific transforms
@@ -38,10 +40,10 @@ configs/
 ├── data/                       # Dataset configurations
 ├── model/                      # Model configurations
 ├── trainer/                    # PyTorch Lightning trainer configs
-├── callbacks/                  # Callback configurations
+├── callbacks/                  # Callback configurations (metrics, checkpointing, etc.)
 ├── logger/                     # Logger configurations
 ├── debug/                      # Debug presets
-└── experiment/                 # Experiment-specific configs
+└── experiment/                 # Experiment-specific configs (includes metrics)
 ```
 
 ## Core Components
@@ -106,7 +108,6 @@ A generic `LightningModule` that wires together:
 
 - **Forward function**: Callable that processes batches
 - **Losses**: `CriterionsComposition` for computing multiple weighted losses
-- **Metrics**: Optional `MetricsComposition` for tracking performance
 - **Optimizer**: Factory function returning configured optimizer
 - **Scheduler**: Optional LR scheduler factory
 
@@ -116,16 +117,15 @@ A generic `LightningModule` that wires together:
 - `criterions`: Composition of loss functions with weights
 - `optimizer`: Partial optimizer constructor
 - `scheduler`: Optional partial scheduler constructor
-- `metrics`: Optional composition of metrics
-- `tracked_metric_name`: Metric to track for best model selection
 - `compile`: Whether to use `torch.compile()` for speedup
 
 **Workflow:**
 
 1. `forward()` calls `forward_fn(batch)` to get predictions
-2. `model_step()` computes losses and metrics for train/val/test
-3. Logs all losses and metrics with `sync_dist=True` for DDP
-4. Tracks best validation metric for model checkpointing
+2. `model_step()` computes and logs losses for train/val/test
+3. Logs all losses with `sync_dist=True` for DDP
+
+**Note:** Metrics are handled by `MetricsCallback` (see Callbacks section below).
 
 ### 4. Transforms
 
@@ -164,7 +164,54 @@ Creates a view of the batch with renamed keys.
 transform = RenameTransform({"old_key": "new_key"})
 ```
 
-### 5. Loss and Metric Compositions
+### 5. Callbacks
+
+#### `MetricsCallback`
+
+Location: `ml_core/callbacks/metrics_callback.py`
+
+A PyTorch Lightning callback that manages metrics computation and logging for train/val/test stages.
+
+**Key Features:**
+
+- Creates metric collections for each stage (train/val/test) and attaches them to the LightningModule
+- Updates and logs metrics during training via callback hooks
+- Tracks the best validation metric for model selection
+- Metrics are kept as module attributes to follow Lightning's expected pattern
+
+**Key Parameters:**
+
+- `metrics`: Optional `MetricsComposition` to track across stages
+- `tracked_metric_name`: Metric key (without stage prefix) used to track the best value on validation; if None, tracks validation loss
+
+**Workflow:**
+
+1. In `setup()`, creates and attaches metric collections and best metric tracker to the module
+2. In `on_train_start()`, resets validation metrics and best metric tracker
+3. In `on_*_batch_end()`, updates and logs metrics for each stage
+4. In `on_validation_epoch_end()`, computes and logs the best validation metric
+
+**Configuration:**
+
+```yaml
+# In experiment config (e.g., configs/experiment/example.yaml)
+callbacks:
+  metrics_callback:
+    tracked_metric_name: accuracy
+    metrics:
+      _target_: ml_core.models.utils.MetricsComposition
+      metrics:
+        accuracy:
+          _target_: torchmetrics.Accuracy
+          task: multiclass
+          num_classes: 10
+      mapping:
+        accuracy:
+          prediction: preds
+          label: target
+```
+
+### 6. Loss and Metric Compositions
 
 Location: `ml_core/models/utils.py`
 
@@ -211,6 +258,8 @@ metrics:
       label: target
 ```
 
+**Note:** `MetricsComposition` is typically configured in experiment configs and passed to `MetricsCallback`, not directly to the model.
+
 ## Configuration System
 
 ### Hydra Configuration
@@ -220,12 +269,12 @@ The framework uses Hydra for hierarchical configuration composition. Main config
 #### Config Groups
 
 - **data**: Dataset and dataloader configurations
-- **model**: Model architecture, losses, metrics, optimizer configurations
+- **model**: Model architecture, losses, optimizer configurations
 - **trainer**: PyTorch Lightning Trainer settings (devices, precision, etc.)
-- **callbacks**: Lightning callbacks (checkpointing, early stopping, etc.)
+- **callbacks**: Lightning callbacks (checkpointing, early stopping, metrics, etc.)
 - **logger**: Experiment loggers (wandb, tensorboard, mlflow, etc.)
 - **paths**: Directory paths for data, logs, and outputs
-- **experiment**: Pre-configured experiment setups
+- **experiment**: Pre-configured experiment setups (including metrics configuration)
 - **debug**: Debug presets (see below)
 
 #### Config Overrides
@@ -234,16 +283,16 @@ Override any configuration from command line:
 
 ```bash
 # Change model and data
-python ml_core/train.py data=mnist model=mnist
+python ml_core/train.py --config-dir configs data=mnist model=mnist
 
 # Override specific parameters
-python ml_core/train.py trainer.max_epochs=10 data.batch_size=64
+python ml_core/train.py --config-dir configs trainer.max_epochs=10 data.batch_size=64
 
 # Use experiment config
-python ml_core/train.py experiment=example
+python ml_core/train.py --config-dir configs experiment=example
 
 # Use debug preset
-python ml_core/train.py debug=fdr
+python ml_core/train.py --config-dir configs debug=fdr
 ```
 
 ### Debug Presets
@@ -264,7 +313,7 @@ Debug configurations help during development and troubleshooting:
   - Stores logs in separate `debug/` folder
 
 ```bash
-python ml_core/train.py debug=default
+python ml_core/train.py --config-dir configs debug=default
 ```
 
 #### `debug=fdr` (Fast Dev Run)
@@ -274,7 +323,7 @@ python ml_core/train.py debug=default
 - **Use Case**: Verify code runs without errors before full training
 
 ```bash
-python ml_core/train.py debug=fdr
+python ml_core/train.py --config-dir configs debug=fdr
 ```
 
 #### `debug=limit`
@@ -287,7 +336,7 @@ python ml_core/train.py debug=fdr
 - **Use Case**: Quick iterations when testing changes
 
 ```bash
-python ml_core/train.py debug=limit
+python ml_core/train.py --config-dir configs debug=limit
 ```
 
 #### `debug=overfit`
@@ -299,7 +348,7 @@ python ml_core/train.py debug=limit
 - **Use Case**: Debugging model implementation - if it can't overfit, there's a bug
 
 ```bash
-python ml_core/train.py debug=overfit
+python ml_core/train.py --config-dir configs debug=overfit
 ```
 
 #### `debug=profiler`
@@ -311,7 +360,7 @@ python ml_core/train.py debug=overfit
 - **Use Case**: Identify performance bottlenecks
 
 ```bash
-python ml_core/train.py debug=profiler
+python ml_core/train.py --config-dir configs debug=profiler
 ```
 
 ## Example Workflow: MNIST Classification
@@ -383,20 +432,6 @@ criterions:
       output: input
       label: target
 
-metrics:
-  _target_: ml_core.models.utils.MetricsComposition
-  metrics:
-    accuracy:
-      _target_: torchmetrics.Accuracy
-      task: multiclass
-      num_classes: 10
-  mapping:
-    accuracy:
-      prediction: preds
-      label: target
-
-tracked_metric_name: accuracy
-
 optimizer:
   _target_: torch.optim.Adam
   _partial_: true
@@ -408,13 +443,68 @@ scheduler:
   mode: min
   factor: 0.1
   patience: 10
+
+compile: false
 ```
 
-### 3. Run Training
+**Note:** Metrics are configured in experiment configs, not in the model config. See the experiment config example below.
+
+### 3. Experiment Configuration (`configs/experiment/example.yaml`)
+
+```yaml
+# @package _global_
+
+defaults:
+  - override /data: mnist
+  - override /model: mnist
+  - override /callbacks: default
+  - override /trainer: default
+
+tags: ["mnist", "simple_dense_net"]
+
+seed: 12345
+
+trainer:
+  min_epochs: 5
+  max_epochs: 5
+
+model:
+  optimizer:
+    lr: 0.002
+
+data:
+  batch_size: 64
+
+# Metrics configuration
+callbacks:
+  metrics_callback:
+    tracked_metric_name: accuracy
+    metrics:
+      _target_: ml_core.models.utils.MetricsComposition
+      metrics:
+        accuracy:
+          _target_: torchmetrics.Accuracy
+          task: multiclass
+          num_classes: 10
+      mapping:
+        accuracy:
+          prediction: preds
+          label: target
+```
+
+**Note:** Experiment configs are where you specify metrics to track, allowing you to measure different things for different experiments while reusing the same model architecture.
+
+### 4. Run Training
 
 ```bash
+# Run with default configs
 python ml_core/train.py --config-dir configs
+
+# Run with specific experiment config
+python ml_core/train.py --config-dir configs experiment=example
 ```
+
+**Note:** The `--config-dir configs` flag is required because the `@hydra.main` decorator in `train.py` doesn't specify a default `config_path`. This tells Hydra to look for configurations in the `configs/` directory at the project root.
 
 ## Conducting New Experiments
 
@@ -430,24 +520,25 @@ To run a new experiment:
 
    - Define `forward_fn` (network architecture + post-processing)
    - Specify losses in `criterions` with weights and mappings
-   - Define metrics to track
    - Configure optimizer and scheduler
 
-3. **Optionally create an experiment config** in `configs/experiment/`
+3. **Create an experiment config** in `configs/experiment/`
 
-   - Combines specific data, model, trainer settings
+   - Combines specific data, model, trainer, and callback settings
+   - Define metrics to track in `callbacks.metrics_callback`
+   - Specify `tracked_metric_name` for best model selection
    - Version control best hyperparameters
 
 4. **Run training**
 
    ```bash
-   python ml_core/train.py data=<your_data> model=<your_model>
+   python ml_core/train.py --config-dir configs experiment=<your_experiment>
    ```
 
 5. **Evaluate on test set**
 
    ```bash
-   python ml_core/eval.py ckpt_path=<checkpoint_path>
+   python ml_core/eval.py --config-dir configs ckpt_path=<checkpoint_path>
    ```
 
 ## Advanced Features
@@ -515,3 +606,4 @@ This architecture provides:
 - ✅ **Debuggability**: Multiple debug presets for development
 - ✅ **Extensibility**: Easy to add new models, losses, metrics, transforms
 - ✅ **Best Practices**: Leverages Lightning's training loop and Hydra's config management
+- ✅ **Separation of Concerns**: Metrics managed via callbacks, distinct from model architecture

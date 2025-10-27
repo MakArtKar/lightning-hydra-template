@@ -36,20 +36,6 @@ criterions:
       output: input
       label: target
 
-metrics:
-  _target_: ml_core.models.utils.MetricsComposition
-  metrics:
-    accuracy:
-      _target_: torchmetrics.Accuracy
-      task: multiclass
-      num_classes: 10
-  mapping:
-    accuracy:
-      prediction: preds
-      label: target
-
-tracked_metric_name: accuracy
-
 optimizer:
   _target_: torch.optim.Adam
   _partial_: true
