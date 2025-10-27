@@ -21,8 +21,7 @@ class BaseLitModule(LightningModule):
         criterions: CriterionsComposition,
         optimizer: Callable[[], torch.optim.Optimizer],
         scheduler: (
-            Callable[[torch.optim.Optimizer], torch.optim.lr_scheduler.LRScheduler]
-            | None
+            Callable[[torch.optim.Optimizer], torch.optim.lr_scheduler.LRScheduler] | None
         ) = None,
         metrics: MetricsComposition | None = None,
         tracked_metric_name: str | None = None,
@@ -63,9 +62,7 @@ class BaseLitModule(LightningModule):
         )
 
         if tracked_metric_name is not None and metrics is None:
-            raise ValueError(
-                "`tracked_metric_name` should be None in case null metrics"
-            )
+            raise ValueError("`tracked_metric_name` should be None in case null metrics")
 
     def forward(self, batch) -> Mapping[str, Any]:
         """Forward pass producing a dict-like output expected by losses/metrics.

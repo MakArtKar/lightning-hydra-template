@@ -67,9 +67,7 @@ class BaseDataModule(LightningDataModule):
         if not self.data_train and not self.data_val and not self.data_test:
             self.data_test = self.hf_dict_dataset["test"]
             self.data_train, self.data_val = (
-                self.hf_dict_dataset["train"]
-                .train_test_split(self.val_ratio, seed=42)
-                .values()
+                self.hf_dict_dataset["train"].train_test_split(self.val_ratio, seed=42).values()
             )
 
     def train_dataloader(self) -> DataLoader[Any]:

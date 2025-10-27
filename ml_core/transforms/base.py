@@ -73,9 +73,7 @@ class WrapTransform(nn.Module):
     def __call__(self, batch: Mapping[str, Any]) -> Mapping[str, Any]:
         """Build kwargs from mapping, call the underlying transform, store output."""
         if self.mapping is not None:
-            input_batch = {
-                new_key: batch[old_key] for old_key, new_key in self.mapping.items()
-            }
+            input_batch = {new_key: batch[old_key] for old_key, new_key in self.mapping.items()}
         else:
             input_batch = batch
         output = self.transform(**input_batch)

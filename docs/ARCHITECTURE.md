@@ -51,6 +51,7 @@ configs/
 #### `ml_core/train.py`
 
 The main training entrypoint that:
+
 - Loads Hydra configuration from `configs/train.yaml`
 - Instantiates all components (data, model, trainer, callbacks, loggers)
 - Runs training with `trainer.fit()`
@@ -58,6 +59,7 @@ The main training entrypoint that:
 - Returns metrics for hyperparameter optimization
 
 **Usage:**
+
 ```bash
 python ml_core/train.py --config-dir configs
 ```
@@ -65,12 +67,14 @@ python ml_core/train.py --config-dir configs
 #### `ml_core/eval.py`
 
 The evaluation entrypoint that:
+
 - Loads Hydra configuration from `configs/eval.yaml`
 - Requires a checkpoint path (`ckpt_path`)
 - Instantiates components and runs `trainer.test()`
 - Useful for evaluating saved models on test sets
 
 **Usage:**
+
 ```bash
 python ml_core/eval.py --config-dir configs ckpt_path=/path/to/checkpoint.ckpt
 ```
@@ -80,6 +84,7 @@ python ml_core/eval.py --config-dir configs ckpt_path=/path/to/checkpoint.ckpt
 Location: `ml_core/data/base_datamodule.py`
 
 A generic `LightningDataModule` that:
+
 - Wraps Hugging Face `DatasetDict` for data loading
 - Automatically splits train data into train/validation using `val_ratio`
 - Applies optional transforms on-the-fly via `with_transform`
@@ -87,6 +92,7 @@ A generic `LightningDataModule` that:
 - Creates PyTorch `DataLoader` instances for train/val/test
 
 **Key Parameters:**
+
 - `hf_dict_dataset`: Hugging Face DatasetDict (loaded via config)
 - `val_ratio`: Fraction of training data used for validation (default: 0.1)
 - `transform`: Optional callable transform applied to batches
@@ -97,6 +103,7 @@ A generic `LightningDataModule` that:
 Location: `ml_core/models/base_module.py`
 
 A generic `LightningModule` that wires together:
+
 - **Forward function**: Callable that processes batches
 - **Losses**: `CriterionsComposition` for computing multiple weighted losses
 - **Metrics**: Optional `MetricsComposition` for tracking performance
@@ -104,6 +111,7 @@ A generic `LightningModule` that wires together:
 - **Scheduler**: Optional LR scheduler factory
 
 **Key Parameters:**
+
 - `forward_fn`: Callable mapping batch dict to output dict
 - `criterions`: Composition of loss functions with weights
 - `optimizer`: Partial optimizer constructor
@@ -113,6 +121,7 @@ A generic `LightningModule` that wires together:
 - `compile`: Whether to use `torch.compile()` for speedup
 
 **Workflow:**
+
 1. `forward()` calls `forward_fn(batch)` to get predictions
 2. `model_step()` computes losses and metrics for train/val/test
 3. Logs all losses and metrics with `sync_dist=True` for DDP
@@ -125,6 +134,7 @@ Location: `ml_core/transforms/base.py`
 Dictionary-based transforms that enable flexible data preprocessing and augmentation:
 
 #### `ComposeTransform`
+
 Composes multiple transforms sequentially, merging outputs into the batch dict.
 
 ```python
@@ -135,6 +145,7 @@ transform = ComposeTransform(
 ```
 
 #### `WrapTransform`
+
 Wraps any callable, mapping batch keys to function arguments and storing output under a new key.
 
 ```python
@@ -146,6 +157,7 @@ transform = WrapTransform(
 ```
 
 #### `RenameTransform`
+
 Creates a view of the batch with renamed keys.
 
 ```python
@@ -157,7 +169,9 @@ transform = RenameTransform({"old_key": "new_key"})
 Location: `ml_core/models/utils.py`
 
 #### `CriterionsComposition`
+
 Composes multiple loss functions with:
+
 - Per-loss input mapping from batch keys to criterion arguments
 - Weighted sum producing a `"total"` loss
 - Individual loss tracking
@@ -180,6 +194,7 @@ criterions:
 ```
 
 #### `MetricsComposition`
+
 Extends `torchmetrics.MetricCollection` with per-metric input mapping from batch keys.
 
 ```yaml
@@ -238,6 +253,7 @@ Location: `configs/debug/`
 Debug configurations help during development and troubleshooting:
 
 #### `debug=default`
+
 - **Purpose**: Standard debugging setup for 1 full epoch
 - **Settings**:
   - Disables callbacks and loggers
@@ -252,6 +268,7 @@ python ml_core/train.py debug=default
 ```
 
 #### `debug=fdr` (Fast Dev Run)
+
 - **Purpose**: Quick sanity check - runs 1 train, 1 validation, and 1 test step
 - **Settings**: Inherits from `default` + sets `fast_dev_run=true`
 - **Use Case**: Verify code runs without errors before full training
@@ -261,6 +278,7 @@ python ml_core/train.py debug=fdr
 ```
 
 #### `debug=limit`
+
 - **Purpose**: Train on small subset of data
 - **Settings**:
   - Uses 1% of training data
@@ -273,6 +291,7 @@ python ml_core/train.py debug=limit
 ```
 
 #### `debug=overfit`
+
 - **Purpose**: Overfit to small number of batches to verify model can learn
 - **Settings**:
   - Overfits to 3 batches for 20 epochs
@@ -284,6 +303,7 @@ python ml_core/train.py debug=overfit
 ```
 
 #### `debug=profiler`
+
 - **Purpose**: Profile execution time of training components
 - **Settings**:
   - Runs 1 epoch with profiler enabled
@@ -401,26 +421,31 @@ python ml_core/train.py --config-dir configs
 To run a new experiment:
 
 1. **Choose or create a dataset configuration** in `configs/data/`
+
    - Specify Hugging Face dataset
    - Define data transforms (normalization, augmentation, etc.)
    - Set dataloader parameters
 
 2. **Choose or create a model configuration** in `configs/model/`
+
    - Define `forward_fn` (network architecture + post-processing)
    - Specify losses in `criterions` with weights and mappings
    - Define metrics to track
    - Configure optimizer and scheduler
 
 3. **Optionally create an experiment config** in `configs/experiment/`
+
    - Combines specific data, model, trainer settings
    - Version control best hyperparameters
 
 4. **Run training**
+
    ```bash
    python ml_core/train.py data=<your_data> model=<your_model>
    ```
 
 5. **Evaluate on test set**
+
    ```bash
    python ml_core/eval.py ckpt_path=<checkpoint_path>
    ```
@@ -457,6 +482,7 @@ python ml_core/train.py logger=mlflow
 ### Custom Components
 
 Add custom components by:
+
 1. Creating the component class/function
 2. Adding it to the appropriate module
 3. Referencing it via `_target_` in configs
@@ -473,6 +499,7 @@ All components operate on dictionary batches with the following conventions:
 ## Distributed Training Support
 
 The framework handles distributed training automatically:
+
 - Batch sizes are divided across devices
 - Metrics are synchronized with `sync_dist=True`
 - Supports DDP, FSDP, and other Lightning strategies
@@ -481,10 +508,10 @@ The framework handles distributed training automatically:
 ## Summary
 
 This architecture provides:
+
 - ✅ **Flexibility**: Swap components via configuration
 - ✅ **Reproducibility**: All experiments defined in version-controlled configs
 - ✅ **Scalability**: Built-in distributed training support
 - ✅ **Debuggability**: Multiple debug presets for development
 - ✅ **Extensibility**: Easy to add new models, losses, metrics, transforms
 - ✅ **Best Practices**: Leverages Lightning's training loop and Hydra's config management
-
