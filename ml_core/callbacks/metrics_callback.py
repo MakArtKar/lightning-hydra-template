@@ -48,13 +48,17 @@ class MetricsCallback(Callback):
             pl_module.test_metrics = self.metrics.clone("test/")
 
         # Create best validation metric tracker
+        # Use MaxMetric for custom metrics (higher is better), MinMetric for loss (lower is better)
         if not hasattr(pl_module, "best_val_tracked_metric"):
             pl_module.best_val_tracked_metric = (
                 MaxMetric() if self.tracked_metric_name else MinMetric()
             )
 
     def on_train_start(self, trainer: Trainer, pl_module: LightningModule) -> None:
-        """Reset validation metrics and best metric tracker at the start of training.
+        """Reset validation metrics at the start of training.
+
+        Note: We reset best_val_tracked_metric only when starting fresh training,
+        not when resuming from a checkpoint. When resuming, it gets loaded automatically.
 
         :param trainer: The Lightning trainer.
         :param pl_module: The Lightning module.
@@ -63,8 +67,13 @@ class MetricsCallback(Callback):
             for metric_name in pl_module.val_metrics:
                 pl_module.val_metrics[metric_name].reset()
 
+        # Reset best metric tracker only if NOT resuming from checkpoint
+        # (trainer.ckpt_path is set when resuming)
         if hasattr(pl_module, "best_val_tracked_metric"):
-            pl_module.best_val_tracked_metric.reset()
+            if trainer.ckpt_path is None:
+                # Fresh training - reset the tracker for validation sanity checks
+                pl_module.best_val_tracked_metric.reset()
+            # else: resuming from checkpoint - don't reset, it was loaded from checkpoint
 
     def _on_stage_batch_end(
         self,
