@@ -10,9 +10,9 @@ class MetricsCallback(Callback):
     """Callback that manages metrics computation and logging for train/val/test stages.
 
     This callback creates metric collections for each stage and attaches them to the
-    LightningModule, then updates and logs them during training. Metrics are kept as
-    module attributes to follow Lightning's expected pattern. Also tracks the best
-    validation metric for model selection.
+    LightningModule, then updates and logs them during training. Metrics are kept as module
+    attributes to follow Lightning's expected pattern. Also tracks the best validation metric for
+    model selection.
     """
 
     def __init__(
@@ -23,8 +23,8 @@ class MetricsCallback(Callback):
         """Initialize the metrics callback.
 
         :param metrics: Optional composition of metrics to track across stages.
-        :param tracked_metric_name: Metric key (without stage prefix) used to track the best
-            value on validation; if None, the total validation loss is tracked.
+        :param tracked_metric_name: Metric key (without stage prefix) used to track the best value
+            on validation; if None, the total validation loss is tracked.
         """
         super().__init__()
         self.metrics = metrics
@@ -175,4 +175,3 @@ class MetricsCallback(Callback):
             prog_bar=True,
             sync_dist=True,
         )
-
