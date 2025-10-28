@@ -4,7 +4,7 @@ import os
 import re
 import sys
 from pathlib import Path
-from typing import Callable, Mapping
+from typing import Any, Callable, Mapping
 
 import rootutils
 
@@ -42,7 +42,8 @@ class AITransformWrapper(WrapTransform):
     :param path: Optional subdirectory path for generated files (default: "ai_generations/").
     :param mapping: Optional mapping from batch keys to function argument names.
     :param force: Whether to regenerate the code even if file exists.
-    :param model: OpenAI model to use for code generation (default: "gpt-5-nano").
+    :param api_kwargs: Optional dictionary of parameters to pass to OpenAI API. Defaults to
+        model="gpt-3.5-turbo", temperature=0.1, max_tokens=1000.
     """
 
     def __init__(
@@ -52,7 +53,7 @@ class AITransformWrapper(WrapTransform):
         path: str | None = None,
         mapping: Mapping[str, str] | None = None,
         force: bool = False,
-        model: str = "gpt-5-nano",
+        api_kwargs: dict[str, Any] | None = None,
     ):
         """Initialize the AI transform wrapper."""
         # Extract function name from prompt
@@ -78,7 +79,7 @@ class AITransformWrapper(WrapTransform):
 
         # Generate code if file doesn't exist or force is True
         if not file_path.exists() or force:
-            self._generate_code(transform_prompt, function_name, file_path, model)
+            self._generate_code(transform_prompt, function_name, file_path, api_kwargs)
 
         # Import the generated module
         transform = self._import_transform(file_path, function_name)
@@ -108,7 +109,11 @@ class AITransformWrapper(WrapTransform):
         return match.group(1)
 
     def _generate_code(
-        self, transform_prompt: str, function_name: str, file_path: Path, model: str
+        self,
+        transform_prompt: str,
+        function_name: str,
+        file_path: Path,
+        api_kwargs: dict[str, Any] | None,
     ) -> None:
         """Generate Python code using OpenAI API and save to file."""
         # Get OpenAI API key from environment first
@@ -126,10 +131,21 @@ class AITransformWrapper(WrapTransform):
         # Initialize OpenAI client
         client = OpenAI(api_key=api_key)
 
+        # Set default API kwargs
+        default_kwargs = {
+            "model": "gpt-3.5-turbo",
+            "temperature": 0.1,
+            "max_tokens": 1000,
+        }
+
+        # Merge with provided kwargs (provided kwargs take precedence)
+        final_kwargs = default_kwargs.copy()
+        if api_kwargs:
+            final_kwargs.update(api_kwargs)
+
         # Generate code using OpenAI
         try:
             response = client.chat.completions.create(
-                model=model,
                 messages=[
                     {
                         "role": "user",
@@ -138,8 +154,7 @@ class AITransformWrapper(WrapTransform):
                         ),
                     }
                 ],
-                temperature=0.1,
-                max_tokens=1000,
+                **final_kwargs,
             )
 
             code = response.choices[0].message.content.strip()

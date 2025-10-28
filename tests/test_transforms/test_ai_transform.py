@@ -254,35 +254,109 @@ def add_one(x: float) -> float:
                     transform_prompt="This is not a function definition", new_key="result"
                 )
 
-    def test_model_parameter(self):
-        """Test that model parameter is passed correctly."""
+    def test_api_kwargs_parameter(self):
+        """Test that api_kwargs parameter is passed correctly."""
+        with mock_ai_transform() as (mock_generate, mock_import, temp_dir):
+            # Mock file existence to force code generation
+            with patch("pathlib.Path.exists", return_value=False):
+                api_kwargs = {"model": "gpt-4", "temperature": 0.5}
+                wrapper = AITransformWrapper(
+                    transform_prompt='def test_func(x: float) -> float:\n    """Test function."""\n    return x',
+                    new_key="result",
+                    api_kwargs=api_kwargs,
+                    path=temp_dir,
+                )
+
+            # Check that _generate_code was called with the correct api_kwargs
+            mock_generate.assert_called_once()
+            call_args = mock_generate.call_args[0]
+            assert call_args[3] == api_kwargs  # api_kwargs is the 4th argument
+
+    def test_default_api_kwargs(self):
+        """Test that default api_kwargs are used when not specified."""
         with mock_ai_transform() as (mock_generate, mock_import, temp_dir):
             # Mock file existence to force code generation
             with patch("pathlib.Path.exists", return_value=False):
                 wrapper = AITransformWrapper(
                     transform_prompt='def test_func(x: float) -> float:\n    """Test function."""\n    return x',
                     new_key="result",
-                    model="gpt-4",
                     path=temp_dir,
                 )
 
-            # Check that _generate_code was called with the correct model
+            # Check that _generate_code was called with None (will use defaults)
             mock_generate.assert_called_once()
             call_args = mock_generate.call_args[0]
-            assert call_args[3] == "gpt-4"  # model is the 4th argument
+            assert call_args[3] is None  # api_kwargs is the 4th argument
 
-    def test_default_model(self):
-        """Test that default model is used when not specified."""
-        with mock_ai_transform() as (mock_generate, mock_import, temp_dir):
-            # Mock file existence to force code generation
-            with patch("pathlib.Path.exists", return_value=False):
-                wrapper = AITransformWrapper(
-                    transform_prompt='def test_func(x: float) -> float:\n    """Test function."""\n    return x',
-                    new_key="result",
-                    path=temp_dir,
-                )
+    @pytest.mark.money
+    def test_real_openai_fibonacci(self):
+        """Test real OpenAI API call to generate Fibonacci function.
 
-            # Check that _generate_code was called with the default model
-            mock_generate.assert_called_once()
-            call_args = mock_generate.call_args[0]
-            assert call_args[3] == "gpt-5-nano"  # model is the 4th argument
+        This test actually calls OpenAI API and costs money.
+        Run with: pytest -m money
+        Skip by default with: pytest -m "not money"
+
+        Requires OPENAI_API_KEY environment variable to be set.
+        """
+        # Check if API key is available
+        if not os.environ.get("OPENAI_API_KEY"):
+            pytest.skip("OPENAI_API_KEY not set - skipping real API test")
+
+        # Set up path for generated examples
+        from ml_core.transforms.ai_transform import PROJECT_ROOT
+
+        examples_path = PROJECT_ROOT / "ml_core" / "transforms" / "ai_generations" / "examples"
+
+        # Create the AITransformWrapper with real OpenAI call
+        wrapper = AITransformWrapper(
+            transform_prompt="""def fibonacci(n: int) -> int:
+    \"\"\"Return the n-th Fibonacci number.
+
+    The Fibonacci sequence is: 0, 1, 1, 2, 3, 5, 8, 13, 21, ...
+    Where each number is the sum of the two preceding ones.
+
+    Args:
+        n: The position in the Fibonacci sequence (0-indexed)
+
+    Returns:
+        The n-th Fibonacci number
+    \"\"\"
+    """,
+            new_key="fibonacci_result",
+            path=str(examples_path),
+            force=True,  # Force regeneration for testing
+            api_kwargs={"model": "gpt-3.5-turbo"},  # Use a reliable model
+        )
+
+        # Test the generated function
+        test_cases = [
+            (0, 0),
+            (1, 1),
+            (2, 1),
+            (3, 2),
+            (4, 3),
+            (5, 5),
+            (6, 8),
+            (7, 13),
+            (10, 55),
+        ]
+
+        for n, expected in test_cases:
+            batch = {"n": n}
+            result = wrapper(batch)
+            assert "fibonacci_result" in result, f"Result key not found for n={n}"
+            assert (
+                result["fibonacci_result"] == expected
+            ), f"fibonacci({n}) should be {expected}, got {result['fibonacci_result']}"
+
+        # Verify the file was created in the correct location
+        fibonacci_file = examples_path / "fibonacci.py"
+        assert fibonacci_file.exists(), f"Generated file not found at {fibonacci_file}"
+
+        # Verify the file contains the function
+        with open(fibonacci_file) as f:
+            content = f.read()
+            assert "def fibonacci" in content, "Generated file should contain 'def fibonacci'"
+            assert (
+                "n: int" in content or "n:int" in content
+            ), "Generated function should have type hints"
