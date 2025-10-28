@@ -164,6 +164,53 @@ Creates a view of the batch with renamed keys.
 transform = RenameTransform({"old_key": "new_key"})
 ```
 
+#### `AITransformWrapper`
+
+Location: `ml_core/transforms/ai_transform.py`
+
+Generates and wraps Python functions from natural language descriptions using LLMs (OpenAI).
+
+**Key Features:**
+
+- Automatically generates Python code from text prompts
+- Caches generated functions to files for reuse
+- Supports custom OpenAI models (default: `gpt-5-nano`)
+- Uses temporary directories for testing (no pollution)
+- Inherits from `WrapTransform` for seamless integration
+
+**Usage:**
+
+```yaml
+transform:
+  _target_: ml_core.transforms.ai_transform.AITransformWrapper
+  transform_prompt: |
+    def normalize_data(x: torch.Tensor) -> torch.Tensor:
+      """Normalize tensor to range [0, 1]."""
+      return (x - x.min()) / (x.max() - x.min())
+  new_key: normalized
+  mapping:
+    data: x
+  model: gpt-4  # optional, defaults to gpt-5-nano
+  path: ai_generations/  # optional, defaults to ai_generations/
+  force: false  # optional, regenerate even if file exists
+```
+
+**Requirements:**
+
+- `OPENAI_API_KEY` environment variable must be set
+- `openai` package must be installed (`pip install openai`)
+
+**Prompt Structure:**
+
+The `transform_prompt` must follow this structure:
+```python
+def function_name(param1: type1, param2: type2, ...) -> return_type:
+    """Docstring describing functionality."""
+    # function body
+```
+
+The function name is extracted and used as the filename (`function_name.py`).
+
 ### 5. Callbacks
 
 #### `MetricsCallback`

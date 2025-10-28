@@ -1295,3 +1295,46 @@ You can override any parameter from command line like this
 ```bash
 python ml_core/train.py trainer.max_epochs=20 data.batch_size=64
 ```
+
+# MakArtKar-Fork
+
+## Features
+
+### AI Transform Wrapper
+
+`AITransformWrapper` enables automatic generation of data transformation functions from natural language descriptions using LLMs. Instead of manually coding transforms, describe the desired functionality in plain text, and the AI will generate the implementation.
+
+**Key Features:**
+- **LLM-Powered Generation**: Uses OpenAI models (default: `gpt-5-nano`) to generate Python functions from text prompts
+- **Automatic Caching**: Generated functions are saved to files and reused across runs
+- **Seamless Integration**: Inherits from `WrapTransform` for drop-in compatibility with existing pipelines
+- **Type-Safe**: Requires properly typed function signatures in prompts
+
+**Example Usage:**
+
+```yaml
+# In your data config (e.g., configs/data/mnist.yaml)
+transform:
+  _target_: ml_core.transforms.base.ComposeTransform
+  normalize:
+    _target_: ml_core.transforms.ai_transform.AITransformWrapper
+    transform_prompt: |
+      def normalize_to_range(x: torch.Tensor) -> torch.Tensor:
+        """Normalize tensor values to range [0, 1]."""
+    new_key: normalized_image
+    mapping:
+      image: x
+    model: gpt-4  # Optional, defaults to gpt-5-nano
+```
+
+**Requirements:**
+- Set `OPENAI_API_KEY` environment variable
+
+**Prompt Structure:**
+```python
+def function_name(param1: type1, param2: type2) -> return_type:
+    """Docstring describing the desired functionality."""
+    # Implementation will be auto-generated
+```
+
+The function name from the prompt is used as the filename for caching (e.g., `normalize_to_range.py`).
