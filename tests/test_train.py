@@ -111,6 +111,7 @@ def test_train_resume(
     cfg_train = cfg_train[experiment_path]
     with open_dict(cfg_train):
         cfg_train.trainer.max_epochs = 1
+        cfg_train.callbacks.model_checkpoint.save_top_k = 3
 
     HydraConfig().set_config(cfg_train)
     metric_dict_1, _ = train(cfg_train)
