@@ -26,3 +26,4 @@ interrogate     # docs coverage
 sh            # for running bash commands in some tests (linux/macos only)
 datasets        # for loading and processing datasets
 transformers
+openai
