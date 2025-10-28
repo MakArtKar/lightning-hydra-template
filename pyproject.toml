@@ -4,6 +4,7 @@ addopts = [
   "--durations=0",
   "--strict-markers",
   "--doctest-modules",
+  "-m", "not money",
 ]
 filterwarnings = [
   "ignore::DeprecationWarning",
@@ -12,6 +13,7 @@ filterwarnings = [
 log_cli = "True"
 markers = [
   "slow: slow tests",
+  "money: tests that cost money (e.g., real API calls)",
 ]
 minversion = "6.0"
 testpaths = "tests/"
