@@ -2,15 +2,14 @@
 # Takes token IDs [B, L] and returns logits [B, L, V]
 
 _target_: x_transformers.TransformerWrapper
-num_tokens: 50000  # vocabulary size
-max_seq_len: 512  # maximum sequence length
+num_tokens: 50000 # vocabulary size
+max_seq_len: 512 # maximum sequence length
 attn_layers:
   _target_: x_transformers.Encoder
-  dim: 512  # model dimension
-  depth: 6  # number of transformer layers
-  heads: 8  # number of attention heads
-  use_rmsnorm: true  # use RMSNorm instead of LayerNorm
-  ff_mult: 4  # feedforward multiplier
-  attn_dropout: 0.1  # attention dropout
-  ff_dropout: 0.1  # feedforward dropout
-
+  dim: 512 # model dimension
+  depth: 6 # number of transformer layers
+  heads: 8 # number of attention heads
+  use_rmsnorm: true # use RMSNorm instead of LayerNorm
+  ff_mult: 4 # feedforward multiplier
+  attn_dropout: 0.1 # attention dropout
+  ff_dropout: 0.1 # feedforward dropout

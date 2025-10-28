@@ -21,4 +21,3 @@ batch_size: 128
 num_workers: 8
 persistent_workers: True
 pin_memory: True
-

@@ -42,4 +42,3 @@ class TokenizerTransform(nn.Module):
         tokenized = self.tokenizer(texts, **self.tokenizer_kwargs)
         # Convert to dict - tensors are already in the right shape (batch_size, seq_len)
         return {k: v for k, v in tokenized.items()}
-

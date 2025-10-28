@@ -19,12 +19,14 @@ CONFIG_DIR = str(PROJECT_ROOT / "configs" / "data")
 @pytest.fixture(scope="module")
 def lm1b_dataset_path(tmp_path_factory):
     """Download and save a limited LM1B dataset for testing.
-    
-    Downloads only 100 train and 10 test samples once per module,
-    saves to disk, and returns the path for Hydra config override.
+
+    Downloads only 100 train and 10 test samples once per module, saves to disk, and returns the
+    path for Hydra config override.
     """
     tmp_dir = tmp_path_factory.mktemp("lm1b_test_data")
-    dataset_dict = load_dataset("dvruette/lm1b", split={"train": "train[:100]", "test": "test[:10]"})
+    dataset_dict = load_dataset(  # nosec B615
+        "dvruette/lm1b", split={"train": "train[:100]", "test": "test[:10]"}, revision="main"
+    )
     dataset_dict.save_to_disk(str(tmp_dir))
     return str(tmp_dir)
 
@@ -32,9 +34,9 @@ def lm1b_dataset_path(tmp_path_factory):
 @pytest.fixture(scope="module")
 def lm1b_toy_dataset_path(tmp_path_factory):
     """Create and save a tiny toy dataset for transform testing.
-    
-    Creates a minimal 3-sample dataset for quick transform validation,
-    saves to disk, and returns the path for Hydra config override.
+
+    Creates a minimal 3-sample dataset for quick transform validation, saves to disk, and returns
+    the path for Hydra config override.
     """
     tmp_dir = tmp_path_factory.mktemp("lm1b_toy_data")
     small_data = {
@@ -50,11 +52,14 @@ def lm1b_toy_dataset_path(tmp_path_factory):
     return str(tmp_dir)
 
 
-def _create_datamodule(dataset_path: str, additional_overrides: Optional[List[str]] = None) -> BaseDataModule:
+def _create_datamodule(
+    dataset_path: str, additional_overrides: Optional[List[str]] = None
+) -> BaseDataModule:
     """Create a BaseDataModule using Hydra config with dataset path override.
-    
+
     :param dataset_path: Path to pre-saved dataset on disk.
-    :param additional_overrides: Additional Hydra config overrides (default: batch_size=8, num_workers=0).
+    :param additional_overrides: Additional Hydra config overrides (default: batch_size=8,
+        num_workers=0).
     :return: Instantiated BaseDataModule.
     """
     base_overrides = [
@@ -64,14 +69,14 @@ def _create_datamodule(dataset_path: str, additional_overrides: Optional[List[st
         "num_workers=0",
         "persistent_workers=False",  # Required when num_workers=0
     ]
-    
+
     if additional_overrides:
         base_overrides.extend(additional_overrides)
-    
+
     with initialize_config_dir(version_base="1.3", config_dir=CONFIG_DIR):
         cfg = compose(config_name="lm1b", overrides=base_overrides)
         dm = hydra.utils.instantiate(cfg)
-    
+
     return dm
 
 
@@ -82,7 +87,7 @@ def _check_batch_correctness(
     check_tokenization: bool = True,
 ) -> None:
     """Check if batch has correct structure, shapes, and dtypes.
-    
+
     :param batch: Batch dictionary from dataloader.
     :param expected_batch_size: Expected batch size.
     :param expected_seq_length: Expected sequence length.
@@ -90,24 +95,28 @@ def _check_batch_correctness(
     """
     # Check text key is preserved
     assert "text" in batch, "Original 'text' key should be preserved"
-    
+
     if check_tokenization:
         # Check all tokenizer outputs
         tokenizer_keys = ["input_ids", "attention_mask", "token_type_ids"]
-        
+
         for key in tokenizer_keys:
             # Check key exists
             assert key in batch, f"Tokenizer should produce '{key}'"
-            
+
             # Check batch size
-            assert len(batch[key]) == expected_batch_size, f"{key}: Batch size should be {expected_batch_size}"
-            
+            assert (
+                len(batch[key]) == expected_batch_size
+            ), f"{key}: Batch size should be {expected_batch_size}"
+
             # Check sequence length
-            assert batch[key].shape[1] == expected_seq_length, f"{key}: Sequence length should be {expected_seq_length}"
-            
+            assert (
+                batch[key].shape[1] == expected_seq_length
+            ), f"{key}: Sequence length should be {expected_seq_length}"
+
             # Check dtype
             assert batch[key].dtype == torch.int64, f"{key} should be int64"
-        
+
         # Check that tokenization is meaningful (not all zeros)
         assert batch["input_ids"].sum() > 0, "input_ids should contain actual tokens"
         assert batch["attention_mask"].sum() > 0, "attention_mask should have some active tokens"
@@ -118,9 +127,11 @@ def _check_batch_correctness(
         assert all(isinstance(text, str) for text in batch["text"]), "All texts should be strings"
 
 
-def _check_datamodule_structure(dm: BaseDataModule, expected_total_train_val: int, expected_test: int) -> None:
+def _check_datamodule_structure(
+    dm: BaseDataModule, expected_total_train_val: int, expected_test: int
+) -> None:
     """Check if BaseDataModule has correct structure and dataset splits.
-    
+
     :param dm: BaseDataModule instance.
     :param expected_total_train_val: Expected total number of train+val samples.
     :param expected_test: Expected number of test samples.
@@ -129,16 +140,20 @@ def _check_datamodule_structure(dm: BaseDataModule, expected_total_train_val: in
     assert dm.data_train is not None, "Train dataset should exist"
     assert dm.data_val is not None, "Validation dataset should exist"
     assert dm.data_test is not None, "Test dataset should exist"
-    
+
     # Check dataloaders work
     assert dm.train_dataloader() is not None, "Train dataloader should be created"
     assert dm.val_dataloader() is not None, "Val dataloader should be created"
     assert dm.test_dataloader() is not None, "Test dataloader should be created"
-    
+
     # Verify total number of samples
     total_train_val = len(dm.data_train) + len(dm.data_val)
-    assert total_train_val == expected_total_train_val, f"Train+Val should be {expected_total_train_val}, got {total_train_val}"
-    assert len(dm.data_test) == expected_test, f"Test should be {expected_test}, got {len(dm.data_test)}"
+    assert (
+        total_train_val == expected_total_train_val
+    ), f"Train+Val should be {expected_total_train_val}, got {total_train_val}"
+    assert (
+        len(dm.data_test) == expected_test
+    ), f"Test should be {expected_test}, got {len(dm.data_test)}"
 
 
 def test_tokenizer_transform_manually(lm1b_toy_dataset_path: str) -> None:
@@ -148,7 +163,7 @@ def test_tokenizer_transform_manually(lm1b_toy_dataset_path: str) -> None:
     - Tokenizer produces expected keys (input_ids, attention_mask, token_type_ids)
     - Token shapes and dtypes are correct
     - Batch size is preserved
-    
+
     :param lm1b_toy_dataset_path: Path to pre-saved toy dataset.
     """
     # Create datamodule with toy dataset and custom settings
@@ -157,13 +172,15 @@ def test_tokenizer_transform_manually(lm1b_toy_dataset_path: str) -> None:
         additional_overrides=[
             "transform.tokenize.max_length=128",
             "batch_size=2",
-        ]
+        ],
     )
     dm.setup()
 
     # Get a batch and check correctness
     batch = next(iter(dm.train_dataloader()))
-    _check_batch_correctness(batch, expected_batch_size=2, expected_seq_length=128, check_tokenization=True)
+    _check_batch_correctness(
+        batch, expected_batch_size=2, expected_seq_length=128, check_tokenization=True
+    )
 
 
 def test_lm1b_dataset_download_without_transform(lm1b_dataset_path: str) -> None:
@@ -173,7 +190,7 @@ def test_lm1b_dataset_download_without_transform(lm1b_dataset_path: str) -> None
     - Dataset loads correctly from HuggingFace
     - Required splits are present
     - Basic structure is correct
-    
+
     :param lm1b_dataset_path: Path to pre-saved limited dataset.
     """
     # Create datamodule without transform
@@ -182,7 +199,7 @@ def test_lm1b_dataset_download_without_transform(lm1b_dataset_path: str) -> None
         additional_overrides=[
             "transform=null",
             "batch_size=8",
-        ]
+        ],
     )
     dm.setup()
 
@@ -191,7 +208,9 @@ def test_lm1b_dataset_download_without_transform(lm1b_dataset_path: str) -> None
 
     # Get a batch and check basic structure (no tokenization)
     batch = next(iter(dm.train_dataloader()))
-    _check_batch_correctness(batch, expected_batch_size=8, expected_seq_length=0, check_tokenization=False)
+    _check_batch_correctness(
+        batch, expected_batch_size=8, expected_seq_length=0, check_tokenization=False
+    )
 
 
 @pytest.mark.parametrize("batch_size", [16, 32])
@@ -208,11 +227,8 @@ def test_lm1b_full_setup(lm1b_dataset_path: str, batch_size: int) -> None:
     :param batch_size: Batch size to test with.
     """
     # Create datamodule with full tokenization
-    dm = _create_datamodule(
-        lm1b_dataset_path,
-        additional_overrides=[f"batch_size={batch_size}"]
-    )
-    
+    dm = _create_datamodule(lm1b_dataset_path, additional_overrides=[f"batch_size={batch_size}"])
+
     dm.prepare_data()
 
     # Before setup, data splits should not exist
@@ -226,7 +242,12 @@ def test_lm1b_full_setup(lm1b_dataset_path: str, batch_size: int) -> None:
 
     # Check train batch correctness
     train_batch = next(iter(dm.train_dataloader()))
-    _check_batch_correctness(train_batch, expected_batch_size=batch_size, expected_seq_length=512, check_tokenization=True)
+    _check_batch_correctness(
+        train_batch,
+        expected_batch_size=batch_size,
+        expected_seq_length=512,
+        check_tokenization=True,
+    )
 
     # Test validation dataloader (might have smaller batch)
     val_batch = next(iter(dm.val_dataloader()))
