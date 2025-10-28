@@ -1305,6 +1305,7 @@ python ml_core/train.py trainer.max_epochs=20 data.batch_size=64
 `AITransformWrapper` enables automatic generation of data transformation functions from natural language descriptions using LLMs. Instead of manually coding transforms, describe the desired functionality in plain text, and the AI will generate the implementation.
 
 **Key Features:**
+
 - **LLM-Powered Generation**: Uses OpenAI models (default: `gpt-5-nano`) to generate Python functions from text prompts
 - **Automatic Caching**: Generated functions are saved to files and reused across runs
 - **Seamless Integration**: Inherits from `WrapTransform` for drop-in compatibility with existing pipelines
@@ -1328,9 +1329,11 @@ transform:
 ```
 
 **Requirements:**
+
 - Set `OPENAI_API_KEY` environment variable
 
 **Prompt Structure:**
+
 ```python
 def function_name(param1: type1, param2: type2) -> return_type:
     """Docstring describing the desired functionality."""

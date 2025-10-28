@@ -203,6 +203,7 @@ transform:
 **Prompt Structure:**
 
 The `transform_prompt` must follow this structure:
+
 ```python
 def function_name(param1: type1, param2: type2, ...) -> return_type:
     """Docstring describing functionality."""
