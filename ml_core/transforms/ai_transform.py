@@ -41,6 +41,7 @@ class AITransformWrapper(WrapTransform):
     :param new_key: Key to place the function output under in the batch.
     :param path: Optional subdirectory path for generated files (default: "ai_generations/").
     :param mapping: Optional mapping from batch keys to function argument names.
+    :param transform_kwargs: Optional additional kwargs to pass to the transform.
     :param force: Whether to regenerate the code even if file exists.
     :param api_kwargs: Optional dictionary of parameters to pass to OpenAI API. Defaults to
         model="gpt-3.5-turbo", temperature=0.1, max_tokens=1000.
@@ -52,6 +53,7 @@ class AITransformWrapper(WrapTransform):
         new_key: str,
         path: str | None = None,
         mapping: Mapping[str, str] | None = None,
+        transform_kwargs: Mapping[str, Any] | None = None,
         force: bool = False,
         api_kwargs: dict[str, Any] | None = None,
     ):
@@ -85,7 +87,7 @@ class AITransformWrapper(WrapTransform):
         transform = self._import_transform(file_path, function_name)
 
         # Initialize parent WrapTransform
-        super().__init__(transform, new_key, mapping)
+        super().__init__(transform, new_key, mapping, transform_kwargs)
 
     def _extract_function_name(self, transform_prompt: str) -> str:
         """Extract function name from the transform prompt.
