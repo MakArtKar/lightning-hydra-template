@@ -51,6 +51,7 @@ class WrapTransform(nn.Module):
     :param transform: Callable to execute with remapped inputs.
     :param new_key: Key to place the callable output under.
     :param mapping: Optional mapping from batch to callable argument names.
+    :param transform_kwargs: Optional kwargs to pass to the transform.
     """
 
     def __init__(
@@ -58,17 +59,20 @@ class WrapTransform(nn.Module):
         transform: Callable,
         new_key: str,
         mapping: Mapping[str, str] | None = None,
+        transform_kwargs: Mapping[str, Any] | None = None,
     ):
         """Initialize the wrapper.
 
         :param transform: Callable to execute with remapped inputs.
         :param new_key: Key to place the callable output under.
         :param mapping: Optional mapping from batch keys to callable kwargs.
+        :param transform_kwargs: Optional kwargs to pass to the transform.
         """
         super().__init__()
         self.transform = transform
         self.new_key = new_key
         self.mapping = mapping
+        self.transform_kwargs = transform_kwargs or {}
 
     def __call__(self, batch: Mapping[str, Any]) -> Mapping[str, Any]:
         """Build kwargs from mapping, call the underlying transform, store output."""
@@ -76,5 +80,5 @@ class WrapTransform(nn.Module):
             input_batch = {new_key: batch[old_key] for old_key, new_key in self.mapping.items()}
         else:
             input_batch = batch
-        output = self.transform(**input_batch)
+        output = self.transform(**input_batch, **self.transform_kwargs)
         return batch | {self.new_key: output}
