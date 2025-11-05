@@ -46,25 +46,20 @@ class ComposeTransform(nn.Module):
 
 
 class WrapTransform(nn.Module):
-    """Wrap a callable, building kwargs from `mapping` and writing to `new_key`.
-
-    :param transform: Callable to execute with remapped inputs.
-    :param new_key: Key to place the callable output under.
-    :param mapping: Optional mapping from batch to callable argument names.
-    :param transform_kwargs: Optional kwargs to pass to the transform.
-    """
+    """Wrap a callable, building kwargs from `mapping` and writing to `new_key`."""
 
     def __init__(
         self,
         transform: Callable,
-        new_key: str,
+        new_key: str | None = None,
         mapping: Mapping[str, str] | None = None,
         transform_kwargs: Mapping[str, Any] | None = None,
     ):
         """Initialize the wrapper.
 
         :param transform: Callable to execute with remapped inputs.
-        :param new_key: Key to place the callable output under.
+        :param new_key: Key to place the callable output under. If None, the output is returned as
+            is (should be a dict).
         :param mapping: Optional mapping from batch keys to callable kwargs.
         :param transform_kwargs: Optional kwargs to pass to the transform.
         """
@@ -81,4 +76,6 @@ class WrapTransform(nn.Module):
         else:
             input_batch = batch
         output = self.transform(**input_batch, **self.transform_kwargs)
-        return batch | {self.new_key: output}
+        if self.new_key is not None:
+            output = {self.new_key: output}
+        return {**batch, **output}
