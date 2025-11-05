@@ -6,12 +6,12 @@ _target_: ml_core.models.base_module.BaseLitModule
 
 forward_fn:
   _target_: ml_core.transforms.base.ComposeTransform
-  
+
   sample_mask:
     _target_: ml_core.transforms.base.WrapTransform
     transform:
       _target_: ml_core.transforms.diffusion.mdlm.SampleMask
-      # samples k ~ U[1, L] ans mask ~ B(k/L)
+      # samples k ~ U[1, L] and mask ~ B(k/L)
     mapping:
       input_ids: input_ids
     new_key: mask

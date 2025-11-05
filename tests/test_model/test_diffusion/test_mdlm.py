@@ -22,7 +22,7 @@ def mdlm_forward_fn():
     GlobalHydra.instance().clear()
 
     config_path = os.path.join(PROJECT_ROOT, "configs")
-    
+
     # Define test parameters
     dim = 16
     depth = 2
@@ -30,7 +30,7 @@ def mdlm_forward_fn():
     vocab_size = 200  # Large enough for mask_token_id (typically 103)
     max_length = 128
     tokenizer_model = "bert-base-uncased"
-    
+
     with initialize_config_dir(version_base="1.3", config_dir=config_path):
         # Load the mdlm config and override values directly
         cfg = compose(
@@ -44,17 +44,18 @@ def mdlm_forward_fn():
                 # Provide data params
                 f"++params.data.max_length={max_length}",
                 # Provide tokenizer for MaskInputIds
-                f"++params.data.tokenizer._target_=transformers.AutoTokenizer.from_pretrained",
+                "++params.data.tokenizer._target_=transformers.AutoTokenizer.from_pretrained",
                 f"++params.data.tokenizer.pretrained_model_name_or_path={tokenizer_model}",
             ],
         )
-        
+
         # Instantiate the entire config to properly resolve all interpolations
         from hydra.utils import instantiate
+
         cfg = instantiate(cfg)
-        
+
         yield cfg.model.diffusion.forward_fn
-    
+
     GlobalHydra.instance().clear()
 
 
@@ -108,4 +109,3 @@ def test_mdlm_forward_fn_shapes(mdlm_forward_fn):
     assert output["masked_input_ids"].shape == (batch_size, seq_length)
     assert output["logits"].shape == (batch_size, seq_length, vocab_size)
     assert output["reshaped_logits"].shape == (batch_size, vocab_size, seq_length)
-

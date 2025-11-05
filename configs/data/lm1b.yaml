@@ -10,7 +10,7 @@ val_ratio: 0.1
 
 transform:
   _target_: ml_core.transforms.base.ComposeTransform
-  
+
   convert_mask_to_bool:
     _target_: ml_core.transforms.base.WrapTransform
     transform:
