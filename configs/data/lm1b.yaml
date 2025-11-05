@@ -1,0 +1,25 @@
+defaults:
+  - /data/transform@transform.tokenizer: tokenizer
+
+_target_: ml_core.data.base_datamodule.BaseDataModule
+hf_dict_dataset:
+  _target_: datasets.load_dataset
+  _args_:
+    - dvruette/lm1b
+val_ratio: 0.1
+
+transform:
+  _target_: ml_core.transforms.base.ComposeTransform
+  
+  convert_mask_to_bool:
+    _target_: ml_core.transforms.base.WrapTransform
+    transform:
+      _target_: ml_core.transforms.diffusion.mdlm.ToBool
+    mapping:
+      attention_mask: tensor
+    new_key: attention_mask
+
+batch_size: 128
+num_workers: 8
+persistent_workers: True
+pin_memory: True
