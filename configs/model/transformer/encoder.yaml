@@ -1,0 +1,8 @@
+_target_: x_transformers.TransformerWrapper
+num_tokens: ${params.model.num_tokens}
+max_seq_len: ${params.data.max_length}
+attn_layers:
+  _target_: x_transformers.Encoder
+  dim: ${params.model.dim}
+  depth: ${params.model.depth}
+  heads: ${params.model.heads}

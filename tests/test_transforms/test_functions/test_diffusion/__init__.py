@@ -1,0 +1,2 @@
+"""Diffusion function tests."""
+

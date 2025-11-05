@@ -1,0 +1,77 @@
+defaults:
+  - _self_
+  - /model/transformer@forward_fn.network.transform: encoder
+
+_target_: ml_core.models.base_module.BaseLitModule
+
+forward_fn:
+  _target_: ml_core.transforms.base.ComposeTransform
+  
+  sample_mask:
+    _target_: ml_core.transforms.base.WrapTransform
+    transform:
+      _target_: ml_core.transforms.diffusion.mdlm.SampleMask
+      # samples k ~ U[1, L] ans mask ~ B(k/L)
+    mapping:
+      input_ids: input_ids
+    new_key: mask
+
+  masked_input_ids:
+    _target_: ml_core.transforms.base.WrapTransform
+    transform:
+      _target_: ml_core.transforms.diffusion.mdlm.MaskInputIds
+      # mask input_ids with mask.
+      # takes as parameter either mask_token_id or tokenizer from which mask_token_id should be extracted
+      tokenizer: ${params.data.tokenizer}
+    mapping:
+      input_ids: input_ids
+      mask: mask
+    new_key: masked_input_ids
+
+  network:
+    _target_: ml_core.transforms.base.WrapTransform
+    transform: ???
+    mapping:
+      masked_input_ids: x
+      attention_mask: mask
+    new_key: logits
+
+  reshape_logits:
+    _target_: ml_core.transforms.base.WrapTransform
+    transform:
+      _target_: torch.transpose
+      _partial_: true
+      dim0: -1
+      dim1: -2
+      # [B, L, D] -> [B, D, L] before applying CE loss
+    mapping:
+      logits: x
+    new_key: reshaped_logits
+
+criterions:
+  _target_: ml_core.models.utils.CriterionsComposition
+  criterions:
+    ce:
+      _target_: torch.nn.CrossEntropyLoss
+  weights:
+    ce: 1.0
+  mapping:
+    ce:
+      reshaped_logits: input
+      input_ids: target
+
+optimizer:
+  _target_: torch.optim.Adam
+  _partial_: true
+  lr: 0.001
+  weight_decay: 0.0
+
+scheduler:
+  _target_: torch.optim.lr_scheduler.ReduceLROnPlateau
+  _partial_: true
+  mode: min
+  factor: 0.1
+  patience: 10
+
+# compile model for faster training with pytorch 2.0
+compile: false
