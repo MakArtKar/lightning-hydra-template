@@ -171,10 +171,10 @@ with initialize_config_dir(version_base="1.3", config_dir=config_path):
             "++params.data.tokenizer._target_=tests.helpers.char_tokenizer.CharTokenizer.from_pretrained",
         ],
     )
-    
+
     # Instantiate entire config to resolve all nested interpolations
     cfg = instantiate(cfg)
-    
+
     # Now extract the specific component you want to test
     forward_fn = cfg.model.forward_fn
 
