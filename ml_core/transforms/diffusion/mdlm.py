@@ -77,3 +77,30 @@ class MaskInputIds:
         masked_input_ids[mask] = self.mask_token_id
 
         return masked_input_ids
+
+
+class MaskLoss:
+    """Apply ignore_index to non-masked positions in targets for loss computation.
+
+    This ensures the loss is only computed on masked positions, not the entire sequence.
+    """
+
+    def __init__(self, ignore_index: int = -100):
+        """Initialize the mask loss function.
+
+        :param ignore_index: Index to use for positions that should be ignored in loss computation.
+            Default is -100, which is the standard ignore_index for CrossEntropyLoss.
+        """
+        self.ignore_index = ignore_index
+
+    def __call__(self, target: torch.Tensor, mask: torch.Tensor) -> torch.Tensor:
+        """Apply ignore_index to non-masked positions in target.
+
+        :param target: Target token IDs tensor of shape [batch_size, seq_length].
+        :param mask: Boolean mask tensor of shape [batch_size, seq_length] where True means mask.
+        :return: Modified target tensor with ignore_index at non-masked positions.
+        """
+        # Set non-masked positions to ignore_index
+        masked_target = torch.where(mask, target, self.ignore_index)
+
+        return masked_target

@@ -48,6 +48,16 @@ forward_fn:
       logits: x
     new_key: reshaped_logits
 
+  mask_loss:
+    _target_: ml_core.transforms.base.WrapTransform
+    transform:
+      _target_: ml_core.transforms.diffusion.mdlm.MaskLoss
+      # Apply ignore_index to non-masked positions for loss computation
+    mapping:
+      input_ids: target
+      mask: mask
+    new_key: masked_target
+
 criterions:
   _target_: ml_core.models.utils.CriterionsComposition
   criterions:
@@ -58,7 +68,7 @@ criterions:
   mapping:
     ce:
       reshaped_logits: input
-      input_ids: target
+      masked_target: target
 
 optimizer:
   _target_: torch.optim.Adam

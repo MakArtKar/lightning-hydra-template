@@ -31,60 +31,55 @@ ______________________________________________________________________
 
 ## CRITICAL TECHNICAL DEBT (Must Fix)
 
-### 🔴 DEBT-1: Loss Computation on Masked Positions Only
+### ✅ DEBT-1: Loss Computation on Masked Positions Only \[IMPLEMENTED\]
 
 **Priority**: VERY CRITICAL - Fix First
 
-**Current State**:
-
-```yaml
-criterions:
-  ce:
-    _target_: torch.nn.CrossEntropyLoss
-  mapping:
-    ce:
-      reshaped_logits: input
-      input_ids: target  # Loss on ALL positions
-```
-
-**Required State**:
-Loss should only be computed on **masked positions**, not the entire sequence.
+**Status**: ✅ COMPLETED (2025-11-05)
 
 **Implementation**:
 
-```python
-# Option 1: Modify targets to use ignore_index
-def compute_masked_loss(logits, targets, mask, ignore_index=-100):
-    """
-    Args:
-        logits: [B, V, L]
-        targets: [B, L]
-        mask: [B, L] - True where masked
-    """
-    targets = targets.clone()
-    targets[~mask] = ignore_index
-    return F.cross_entropy(logits, targets, ignore_index=ignore_index)
+Created `MaskLoss` class in `ml_core/transforms/diffusion/mdlm.py`:
 
-# Option 2: Manual masking
-def compute_masked_loss(logits, targets, mask):
-    """Compute CE loss only on masked positions."""
-    # logits: [B, V, L], targets: [B, L], mask: [B, L]
-    loss = F.cross_entropy(logits, targets, reduction='none')  # [B, L]
-    masked_loss = loss * mask.float()
-    return masked_loss.sum() / mask.sum()
+- Takes `ignore_index: int = -100` parameter in `__init__`
+- `__call__` takes `target` and `mask` parameters
+- Sets non-masked positions (where `mask = False`) to `ignore_index`
+- This ensures CrossEntropyLoss only computes on masked positions
+
+**Config Update**:
+
+```yaml
+# In configs/model/diffusion/mdlm.yaml
+forward_fn:
+  mask_loss:
+    _target_: ml_core.transforms.base.WrapTransform
+    transform:
+      _target_: ml_core.transforms.diffusion.mdlm.MaskLoss
+    mapping:
+      input_ids: target
+      mask: mask
+    new_key: masked_target
+
+criterions:
+  mapping:
+    ce:
+      reshaped_logits: input
+      masked_target: target  # Loss only on masked positions
 ```
 
 **Action Items**:
 
-1. [ ] In `ml_core/transforms/diffusion/mdlm.py` create `MaskLoss` class - its `__call__` takes target and mask parameters and in `mask = True` positions puts `ignore_index` value. `__init__` takes `ignore_index: int = -100`.
-2. [ ] Create unit tests for it in `tests/test_transforms/test_functions/test_diffusion/test_mdlm/test_mask_loss.py`
-3. [ ] Update `forward_fn` in `configs/model/diffusion/mdlm.yaml`
+1. [x] In `ml_core/transforms/diffusion/mdlm.py` create `MaskLoss` class
+2. [x] Create unit tests for it in `tests/test_transforms/test_functions/test_diffusion/test_mdlm/test_mask_loss.py`
+3. [x] Update `forward_fn` in `configs/model/diffusion/mdlm.yaml`
 
-**Files to Modify**:
+**Files Modified**:
 
-- `ml_core/transforms/diffusion/mdlm.py` - Create MaskLoss class
-- `tests/test_transforms/test_functions/test_diffusion/test_mdlm/test_mask_loss.py` - unit tests
-- `configs/model/diffusion/mdlm.yaml` - update forward_fn
+- `ml_core/transforms/diffusion/mdlm.py` - Added MaskLoss class
+- `tests/test_transforms/test_functions/test_diffusion/test_mdlm/test_mask_loss.py` - 11 comprehensive unit tests
+- `configs/model/diffusion/mdlm.yaml` - Updated forward_fn to use MaskLoss
+
+**Test Results**: All tests passing ✅
 
 ______________________________________________________________________
 
@@ -841,32 +836,33 @@ ______________________________________________________________________
 
 ### Phase 1: Core Correctness (Week 1)
 
-1. **DEBT-4**: Loss on masked positions only ⚠️ MOST CRITICAL
-2. **DEBT-5**: AdamW optimizer
-3. **DEBT-6**: Cosine LR schedule with warmup
-4. **DEBT-7**: Training hyperparameters (step-based, gradient clip)
-5. **DEBT-9**: bf16 precision
+1. ✅ **DEBT-1**: Loss on masked positions only ⚠️ MOST CRITICAL \[COMPLETED\]
+2. **DEBT-4**: AdamW optimizer
+3. **DEBT-5**: Cosine LR schedule with warmup
+4. **DEBT-6**: Training hyperparameters (step-based, gradient clip)
+5. **DEBT-8**: bf16 precision
 
 ### Phase 2: Model and Training (Week 2)
 
 06. **DEBT-2**: Scale model to 110M parameters
-07. **DEBT-8**: EMA implementation
-08. **DEBT-11**: Perplexity metric
-09. **DEBT-12**: Logging enhancements
+07. **DEBT-7**: EMA implementation
+08. **DEBT-9**: Perplexity metric
+09. **DEBT-10**: Logging enhancements
 10. **DEBT-22**: Unit tests for critical components
 
 ### Phase 3: Inference (Week 3)
 
 11. **DEBT-3**: Basic DDPM sampling
-12. **DEBT-13**: Model checkpointing
+12. **DEBT-11**: Model checkpointing
 13. **DEBT-23**: Integration tests
 14. **DEBT-20**: Pipeline documentation
 
 ### Phase 4: Optimizations (Optional, Week 4+)
 
-15. **DEBT-14**: Advanced sampling methods
-16. **DEBT-15**: Generative perplexity
-17. **DEBT-16-19**: Alternative configs and datasets
+15. **DEBT-12**: Advanced noise schedules
+16. **DEBT-13**: Advanced sampling methods
+17. **DEBT-14**: Generative perplexity
+18. **DEBT-15-19**: Alternative configs and datasets
 
 ______________________________________________________________________
 
@@ -875,8 +871,8 @@ ______________________________________________________________________
 | Component         | Current             | Required        | Priority   | Status    |
 | ----------------- | ------------------- | --------------- | ---------- | --------- |
 | **Loss**          |                     |                 |            |           |
-| Loss positions    | All tokens          | Masked only     | 🔴 CRITICAL | ❌ DEBT-4  |
-| Ignore padding    | No                  | Yes             | 🔴 CRITICAL | ❌ DEBT-4  |
+| Loss positions    | Masked only         | Masked only     | 🔴 CRITICAL | ✅ DEBT-1  |
+| Ignore padding    | Yes                 | Yes             | 🔴 CRITICAL | ✅ DEBT-1  |
 | **Model**         |                     |                 |            |           |
 | Hidden dim        | 16                  | 768             | 🔴 CRITICAL | ❌ DEBT-2  |
 | Depth             | 2                   | 12              | 🔴 CRITICAL | ❌ DEBT-2  |
@@ -924,16 +920,16 @@ ______________________________________________________________________
 
 ### Critical Path (Minimum Viable MDLM)
 
-- **DEBT-4 (Loss masking)**: 1-2 days
-- **DEBT-5 (AdamW)**: 0.5 days
-- **DEBT-6 (LR schedule)**: 0.5 days
-- **DEBT-7 (Training params)**: 0.5 days
+- ✅ **DEBT-1 (Loss masking)**: 1-2 days \[COMPLETED\]
+- **DEBT-4 (AdamW)**: 0.5 days
+- **DEBT-5 (LR schedule)**: 0.5 days
+- **DEBT-6 (Training params)**: 0.5 days
 - **DEBT-2 (Model size)**: 0.5 days
-- **DEBT-8 (EMA)**: 1 day
-- **DEBT-9 (bf16)**: 0.5 days
+- **DEBT-7 (EMA)**: 1 day
+- **DEBT-8 (bf16)**: 0.5 days
 - **DEBT-3 (Sampling)**: 2-3 days
 
-**Total Critical Path**: 7-9 days
+**Total Critical Path**: 5-7 days (remaining)
 
 ### Full Implementation
 
@@ -948,7 +944,7 @@ ______________________________________________________________________
 
 Once critical debt is resolved, verify:
 
-- [ ] Loss computed only on masked positions
+- [x] Loss computed only on masked positions
 - [ ] Model has ~110M parameters
 - [ ] Training runs for 1M steps
 - [ ] Effective batch size = 512
