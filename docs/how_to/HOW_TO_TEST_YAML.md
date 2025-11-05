@@ -123,3 +123,62 @@ def test_basic(tokenizer_transform):
 - ✅ Always use `hydra.utils.instantiate()`
 - ✅ Use `_target_` overrides for complex objects
 - ✅ Use absolute paths with `PROJECT_ROOT`
+
+## Common Problems and Solutions
+
+### Problem 1: Unresolved Interpolations in Tests
+
+**Issue**: Configs use interpolations like `${params.model.dim}` that reference parameters not present in test context.
+
+**Solution**: Provide all required interpolated parameters via overrides using `++` prefix:
+
+```python
+overrides = [
+    "++params.model.dim=8",
+    "++params.model.depth=1",
+    "++params.model.heads=2",
+    "++params.model.num_tokens=128",
+]
+```
+
+**Why this works**: The `++` prefix forces adding keys even in struct mode, and Hydra resolves interpolations after all overrides are applied.
+
+**Best Practice**: Use consistent parameter naming (`params.model.*`, `params.data.*`) across all experiments. This allows test fixtures to apply universal overrides that work for any experiment:
+
+```python
+# In conftest.py - applies to all experiments automatically
+overrides = [
+    "++params.model.dim=8",           # Small model for fast tests
+    "++params.model.num_tokens=128",  # Small vocab for fast tests
+    "++params.data.tokenizer._target_=tests.helpers.char_tokenizer.CharTokenizer.from_pretrained",
+]
+```
+
+Experiments that don't use these params simply ignore them, while experiments that do get automatic test optimization.
+
+### Problem 2: Nested Config Resolution with Parent-Level References
+
+**Issue**: When testing a nested component (e.g., `model.forward_fn`) that uses interpolations referencing parent-level params, direct instantiation fails.
+
+**Solution**: Instantiate the full config first to resolve all interpolations, then extract the desired component:
+
+```python
+with initialize_config_dir(version_base="1.3", config_dir=config_path):
+    cfg = compose(
+        config_name="model/diffusion/mdlm",
+        overrides=[
+            "++params.model.dim=8",
+            "++params.data.tokenizer._target_=tests.helpers.char_tokenizer.CharTokenizer.from_pretrained",
+        ],
+    )
+    
+    # Instantiate entire config to resolve all nested interpolations
+    cfg = instantiate(cfg)
+    
+    # Now extract the specific component you want to test
+    forward_fn = cfg.model.forward_fn
+
+    yield forward_fn
+```
+
+**Why this works**: Hydra resolves interpolations in context of the full config tree, so instantiating the complete config ensures all `${params.*}` references are properly resolved before extraction.

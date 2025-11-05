@@ -60,6 +60,15 @@ def cfg_train_global() -> Dict[str, DictConfig]:
                 "++extras.print_config=False",
                 "++extras.enforce_tags=False",
                 "logger=[]",
+                # Universal model size overrides for faster testing (ignored if not used by experiment)
+                "++params.model.dim=8",
+                "++params.model.depth=1",
+                "++params.model.heads=2",
+                "++params.model.num_tokens=128",  # Match character-level tokenizer vocab size
+                # Use character-level tokenizer for faster testing (ignored if not used by experiment)
+                "++params.data.tokenizer._target_=tests.helpers.char_tokenizer.CharTokenizer.from_pretrained",
+                "++params.data.tokenizer.vocab_size=128",
+                "++params.data.tokenizer.max_length=128",
             ]
 
             cfg = compose(config_name="train.yaml", return_hydra_config=True, overrides=overrides)
@@ -95,6 +104,15 @@ def cfg_eval_global() -> Dict[str, DictConfig]:
                 "++extras.print_config=False",
                 "++extras.enforce_tags=False",
                 "logger=[]",
+                # Universal model size overrides for faster testing (ignored if not used by experiment)
+                "++params.model.dim=8",
+                "++params.model.depth=1",
+                "++params.model.heads=2",
+                "++params.model.num_tokens=128",  # Match character-level tokenizer vocab size
+                # Use character-level tokenizer for faster testing (ignored if not used by experiment)
+                "++params.data.tokenizer._target_=tests.helpers.char_tokenizer.CharTokenizer.from_pretrained",
+                "++params.data.tokenizer.vocab_size=128",
+                "++params.data.tokenizer.max_length=128",
             ]
 
             cfg = compose(config_name="eval.yaml", return_hydra_config=True, overrides=overrides)
