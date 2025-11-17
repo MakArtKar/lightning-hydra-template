@@ -2,7 +2,7 @@
 
 from pathlib import Path
 
-from setuptools import find_packages, setup
+from setuptools import find_namespace_packages, find_packages, setup
 
 
 def read_requirements():
@@ -27,12 +27,17 @@ setup(
     author_email="",
     url="https://github.com/user/project",
     install_requires=read_requirements(),
-    packages=find_packages(),
+    packages=find_packages() + find_namespace_packages(include=["hydra_plugins*"]),
+    include_package_data=True,
     # use this to customize global commands available in the terminal after installing the package
     entry_points={
         "console_scripts": [
             "train_command = ml_core.train:main",
             "eval_command = ml_core.eval:main",
-        ]
+        ],
+        "hydra_plugins": [
+            "custom_searchpath_plugin = hydra_plugins.hydra_custom_searchpath_plugin.custom_searchpath_plugin:CustomSearchPathPlugin",
+            "hydra_colorlog_plugin = hydra_plugins.hydra_colorlog.colorlog:HydraColorlogSearchPathPlugin",
+        ],
     },
 )
