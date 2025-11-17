@@ -6,6 +6,7 @@ from setuptools import find_namespace_packages, find_packages, setup
 
 
 def read_requirements():
+    """Read the requirements from the requirements.txt file."""
     requirements_file = Path(__file__).parent / "requirements.txt"
     with requirements_file.open() as f:
         requirements = []
@@ -25,7 +26,7 @@ setup(
     description="Describe Your Cool Project",
     author="",
     author_email="",
-    url="https://github.com/user/project",
+    url="https://github.com/MakArtKar/lightning-hydra-template",
     install_requires=read_requirements(),
     packages=find_packages() + find_namespace_packages(include=["hydra_plugins*"]),
     include_package_data=True,
