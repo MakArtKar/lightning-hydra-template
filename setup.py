@@ -28,11 +28,12 @@ setup(
     url="https://github.com/user/project",
     install_requires=read_requirements(),
     packages=find_packages(),
+    include_package_data=True,
     # use this to customize global commands available in the terminal after installing the package
     entry_points={
         "console_scripts": [
             "train_command = ml_core.train:main",
             "eval_command = ml_core.eval:main",
-        ]
+        ],
     },
 )

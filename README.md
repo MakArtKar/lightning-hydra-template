@@ -1112,28 +1112,56 @@ git commit -m "Add raw data"
 </details>
 
 <details>
-<summary><b>Support installing project as a package</b></summary>
+<summary><b>Use as an installable package</b></summary>
 
-It allows other people to easily use your modules in their own projects.
-Change name of the `ml_core` folder to your project name and complete the `setup.py` file.
+This template can be installed as a Python package, allowing you to use it in other projects or deploy it easily.
 
-Now your project can be installed from local files:
+### Installation
+
+**From local files (development):**
 
 ```bash
 pip install -e .
 ```
 
-Or directly from git repository:
+**From git repository:**
 
 ```bash
-pip install git+git://github.com/YourGithubName/your-repo-name.git --upgrade
+pip install git+https://github.com/MakArtKar/lightning-hydra-template.git
 ```
 
-So any file can be easily imported into any other file like so:
+### Usage as Package
+
+After installation, you can run training/evaluation from anywhere:
+
+```bash
+# Run with default configs (included in package)
+python -m ml_core.train experiment=example
+
+# Run evaluation
+python -m ml_core.eval ckpt_path=/path/to/checkpoint.ckpt
+
+# Use console commands (if configured in setup.py)
+train_command experiment=example
+eval_command ckpt_path=/path/to/checkpoint.ckpt
+```
+
+### Using Custom Configs
+
+You can use your own config directory with `--config-path`:
+
+```bash
+# Use absolute path to custom configs
+python -m ml_core.train --config-path=/path/to/your/configs experiment=example
+```
+
+**Note:** Configs are included in the package and automatically discovered. Custom configs passed via `--config-path` take priority over package defaults.
+
+### Import modules in your code
 
 ```python
-from project_name.models.base_module import BaseLitModule
-from project_name.data.base_datamodule import BaseDataModule
+from ml_core.models.base_module import BaseLitModule
+from ml_core.data.base_datamodule import BaseDataModule
 ```
 
 </details>

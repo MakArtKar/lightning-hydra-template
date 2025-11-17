@@ -63,7 +63,9 @@ The main training entrypoint that:
 **Usage:**
 
 ```bash
-python ml_core/train.py --config-dir configs
+python ml_core/train.py experiment=example
+# Or with module syntax when installed:
+python -m ml_core.train experiment=example
 ```
 
 #### `ml_core/eval.py`
@@ -78,7 +80,9 @@ The evaluation entrypoint that:
 **Usage:**
 
 ```bash
-python ml_core/eval.py --config-dir configs ckpt_path=/path/to/checkpoint.ckpt
+python ml_core/eval.py ckpt_path=/path/to/checkpoint.ckpt
+# Or with module syntax when installed:
+python -m ml_core.eval ckpt_path=/path/to/checkpoint.ckpt
 ```
 
 ### 2. Data Module (`BaseDataModule`)
@@ -283,16 +287,19 @@ Override any configuration from command line:
 
 ```bash
 # Change model and data
-python ml_core/train.py --config-dir configs data=mnist model=mnist
+python ml_core/train.py data=mnist model=mnist
 
 # Override specific parameters
-python ml_core/train.py --config-dir configs trainer.max_epochs=10 data.batch_size=64
+python ml_core/train.py trainer.max_epochs=10 data.batch_size=64
 
 # Use experiment config
-python ml_core/train.py --config-dir configs experiment=example
+python ml_core/train.py experiment=example
 
 # Use debug preset
-python ml_core/train.py --config-dir configs debug=fdr
+python ml_core/train.py debug=fdr
+
+# Use custom config directory (takes priority over default configs)
+python ml_core/train.py --config-path=/path/to/custom/configs experiment=example
 ```
 
 ### Debug Presets
@@ -313,7 +320,7 @@ Debug configurations help during development and troubleshooting:
   - Stores logs in separate `debug/` folder
 
 ```bash
-python ml_core/train.py --config-dir configs debug=default
+python ml_core/train.py debug=default
 ```
 
 #### `debug=fdr` (Fast Dev Run)
@@ -323,7 +330,7 @@ python ml_core/train.py --config-dir configs debug=default
 - **Use Case**: Verify code runs without errors before full training
 
 ```bash
-python ml_core/train.py --config-dir configs debug=fdr
+python ml_core/train.py debug=fdr
 ```
 
 #### `debug=limit`
@@ -336,7 +343,7 @@ python ml_core/train.py --config-dir configs debug=fdr
 - **Use Case**: Quick iterations when testing changes
 
 ```bash
-python ml_core/train.py --config-dir configs debug=limit
+python ml_core/train.py debug=limit
 ```
 
 #### `debug=overfit`
@@ -348,7 +355,7 @@ python ml_core/train.py --config-dir configs debug=limit
 - **Use Case**: Debugging model implementation - if it can't overfit, there's a bug
 
 ```bash
-python ml_core/train.py --config-dir configs debug=overfit
+python ml_core/train.py debug=overfit
 ```
 
 #### `debug=profiler`
@@ -360,7 +367,7 @@ python ml_core/train.py --config-dir configs debug=overfit
 - **Use Case**: Identify performance bottlenecks
 
 ```bash
-python ml_core/train.py --config-dir configs debug=profiler
+python ml_core/train.py debug=profiler
 ```
 
 ## Example Workflow: MNIST Classification
@@ -498,13 +505,16 @@ callbacks:
 
 ```bash
 # Run with default configs
-python ml_core/train.py --config-dir configs
+python ml_core/train.py
 
 # Run with specific experiment config
-python ml_core/train.py --config-dir configs experiment=example
+python ml_core/train.py experiment=example
+
+# Run as installed module
+python -m ml_core.train experiment=example
 ```
 
-**Note:** The `--config-dir configs` flag is required because the `@hydra.main` decorator in `train.py` doesn't specify a default `config_path`. This tells Hydra to look for configurations in the `configs/` directory at the project root.
+**Note:** Configs are automatically loaded from the package's `configs/` directory via the Hydra searchpath plugin. To use custom configs, pass `--config-path=/path/to/your/configs` which takes priority over the default configs.
 
 ## Conducting New Experiments
 
@@ -532,13 +542,15 @@ To run a new experiment:
 4. **Run training**
 
    ```bash
-   python ml_core/train.py --config-dir configs experiment=<your_experiment>
+   python ml_core/train.py experiment=<your_experiment>
+   # Or use --config-path for custom config directory:
+   python ml_core/train.py --config-path=/path/to/configs experiment=<your_experiment>
    ```
 
 5. **Evaluate on test set**
 
    ```bash
-   python ml_core/eval.py --config-dir configs ckpt_path=<checkpoint_path>
+   python ml_core/eval.py ckpt_path=<checkpoint_path>
    ```
 
 ## Advanced Features
