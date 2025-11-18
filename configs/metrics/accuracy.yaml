@@ -1,0 +1,10 @@
+metrics:
+  accuracy:
+    _target_: torchmetrics.Accuracy
+    task: multiclass
+    num_classes: ${params.data.num_classes}
+
+mapping:
+  accuracy:
+    preds: prediction
+    target: target

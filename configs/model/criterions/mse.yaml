@@ -1,0 +1,8 @@
+criterions:
+  mse:
+    _target_: torch.nn.MSELoss
+
+mapping:
+  mse:
+    input: output
+    target: target
