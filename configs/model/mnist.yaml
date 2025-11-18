@@ -12,7 +12,7 @@ forward_fn:
       lin3_size: 64
       output_size: 10
     mapping:
-      image: x
+      x: image
     new_key: output
   argmax:
     _target_: ml_core.transforms.base.WrapTransform
@@ -21,7 +21,7 @@ forward_fn:
       _partial_: true
       dim: -1
     mapping:
-      output: input
+      input: output
     new_key: prediction
 
 criterions:
@@ -33,8 +33,8 @@ criterions:
     ce: 1.0
   mapping:
     ce:
-      output: input
-      label: target
+      input: output
+      target: label
 
 optimizer:
   _target_: torch.optim.Adam

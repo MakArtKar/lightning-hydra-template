@@ -8,20 +8,20 @@ import torch.nn as nn
 class RenameTransform(nn.Module):
     """Create a view of batch dict with keys renamed per mapping.
 
-    :param mapping: Mapping from old keys to new keys to construct.
+    :param mapping: Mapping from new keys to old keys in the batch.
     """
 
     def __init__(self, mapping: Mapping[str, str]) -> None:
         """Initialize the transform.
 
-        :param mapping: Mapping from existing keys to desired new keys.
+        :param mapping: Mapping from desired new keys to existing batch keys.
         """
         super().__init__()
         self.mapping = mapping
 
     def __call__(self, batch: Mapping[str, Any]) -> Mapping[str, Any]:
         """Return a new dict with keys renamed according to mapping."""
-        return {new_key: batch[old_key] for old_key, new_key in self.mapping.items()}
+        return {new_key: batch[old_key] for new_key, old_key in self.mapping.items()}
 
 
 class ComposeTransform(nn.Module):
@@ -60,7 +60,7 @@ class WrapTransform(nn.Module):
         :param transform: Callable to execute with remapped inputs.
         :param new_key: Key to place the callable output under. If None, the output is returned as
             is (should be a dict).
-        :param mapping: Optional mapping from batch keys to callable kwargs.
+        :param mapping: Optional mapping from callable kwargs to batch keys.
         :param transform_kwargs: Optional kwargs to pass to the transform.
         """
         super().__init__()
@@ -72,7 +72,9 @@ class WrapTransform(nn.Module):
     def __call__(self, batch: Mapping[str, Any]) -> Mapping[str, Any]:
         """Build kwargs from mapping, call the underlying transform, store output."""
         if self.mapping is not None:
-            input_batch = {new_key: batch[old_key] for old_key, new_key in self.mapping.items()}
+            input_batch = {
+                kwarg_name: batch[batch_key] for kwarg_name, batch_key in self.mapping.items()
+            }
         else:
             input_batch = batch
         output = self.transform(**input_batch, **self.transform_kwargs)

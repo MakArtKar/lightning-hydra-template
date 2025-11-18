@@ -156,7 +156,7 @@ Wraps any callable, mapping batch keys to function arguments and storing output 
 transform = WrapTransform(
     transform=some_function,
     new_key="output",
-    mapping={"batch_key": "function_arg"}
+    mapping={"function_arg": "batch_key"}
 )
 ```
 
@@ -165,7 +165,7 @@ transform = WrapTransform(
 Creates a view of the batch with renamed keys.
 
 ```python
-transform = RenameTransform({"old_key": "new_key"})
+transform = RenameTransform({"new_key": "old_key"})
 ```
 
 ### 5. Callbacks
@@ -211,8 +211,8 @@ callbacks:
           num_classes: 10
       mapping:
         accuracy:
-          prediction: preds
-          label: target
+          preds: prediction
+          target: label
 ```
 
 ### 6. Loss and Metric Compositions
@@ -240,8 +240,8 @@ criterions:
     mse: 0.5
   mapping:
     ce:
-      output: input
-      label: target
+      input: output
+      target: label
 ```
 
 #### `MetricsComposition`
@@ -258,8 +258,8 @@ metrics:
       num_classes: 10
   mapping:
     accuracy:
-      prediction: preds
-      label: target
+      preds: prediction
+      target: label
 ```
 
 **Note:** `MetricsComposition` is typically configured in experiment configs and passed to `MetricsCallback`, not directly to the model.
@@ -415,7 +415,7 @@ forward_fn:
       input_size: 784
       output_size: 10
     mapping:
-      image: x
+      x: image
     new_key: output
   argmax:
     _target_: ml_core.transforms.base.WrapTransform
@@ -424,7 +424,7 @@ forward_fn:
       _partial_: true
       dim: -1
     mapping:
-      output: input
+      input: output
     new_key: prediction
 
 criterions:
@@ -436,8 +436,8 @@ criterions:
     ce: 1.0
   mapping:
     ce:
-      output: input
-      label: target
+      input: output
+      target: label
 
 optimizer:
   _target_: torch.optim.Adam
@@ -495,8 +495,8 @@ callbacks:
           num_classes: 10
       mapping:
         accuracy:
-          prediction: preds
-          label: target
+          preds: prediction
+          target: label
 ```
 
 **Note:** Experiment configs are where you specify metrics to track, allowing you to measure different things for different experiments while reusing the same model architecture.
