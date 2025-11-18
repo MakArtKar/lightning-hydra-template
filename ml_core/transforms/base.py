@@ -54,6 +54,7 @@ class WrapTransform(nn.Module):
         new_key: str | None = None,
         mapping: Mapping[str, str] | None = None,
         transform_kwargs: Mapping[str, Any] | None = None,
+        method_name: str | None = None,
     ):
         """Initialize the wrapper.
 
@@ -62,9 +63,13 @@ class WrapTransform(nn.Module):
             is (should be a dict).
         :param mapping: Optional mapping from callable kwargs to batch keys.
         :param transform_kwargs: Optional kwargs to pass to the transform.
+        :param method_name: If not None, extract this method from the transform class instance.
         """
         super().__init__()
-        self.transform = transform
+        if method_name is not None:
+            self.transform = getattr(transform, method_name)
+        else:
+            self.transform = transform
         self.new_key = new_key
         self.mapping = mapping
         self.transform_kwargs = transform_kwargs or {}
