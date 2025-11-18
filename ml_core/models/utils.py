@@ -15,19 +15,20 @@ class CriterionsComposition(nn.Module):
     def __init__(
         self,
         criterions: Mapping[str, nn.Module],
-        weights: Mapping[str, float],
         mapping: Mapping[str, Mapping[str, str]],
+        weights: float | Mapping[str, float] | None = None,
     ):
         """Initialize composition with components and their wiring.
 
         :param criterions: Mapping from loss name to callable loss modules.
-        :param weights: Per-loss weights to aggregate into total.
         :param mapping: For each loss, mapping from criterion kwargs to batch keys.
+        :param weights: Per-loss weights to aggregate into total. If None (by default), all weights
+            are 1 / num_losses.
         """
         super().__init__()
 
         self.criterions = criterions
-        self.weights = weights
+        self.weights = weights or {}
         self.mapping = mapping
 
     def forward(self, batch: dict[str, Any]) -> dict[str, Any]:
@@ -40,7 +41,7 @@ class CriterionsComposition(nn.Module):
                 for kwarg_name, batch_key in self.mapping[name].items()
             }
             losses[name] = criterion(**input_batch)
-            total_loss += self.weights[name] * losses[name]
+            total_loss += self.weights.get(name, 1.0 / len(self.criterions)) * losses[name]
         losses["total"] = total_loss
         return losses
 

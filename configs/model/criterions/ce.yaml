@@ -1,0 +1,8 @@
+criterions:
+  ce:
+    _target_: torch.nn.CrossEntropyLoss
+
+mapping:
+  ce:
+    input: logits
+    target: target

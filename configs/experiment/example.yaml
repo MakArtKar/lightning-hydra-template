@@ -4,6 +4,7 @@
 # python train.py experiment=example
 
 defaults:
+  - /metrics@callbacks.metrics_callback.metrics: accuracy
   - override /data: mnist
   - override /model: mnist
   - override /callbacks: default
@@ -40,15 +41,13 @@ callbacks:
     tracked_metric_name: accuracy
     metrics:
       _target_: ml_core.models.utils.MetricsComposition
-      metrics:
-        accuracy:
-          _target_: torchmetrics.Accuracy
-          task: multiclass
-          num_classes: 10
       mapping:
         accuracy:
-          preds: prediction
           target: label
+
+params:
+  data:
+    num_classes: 10
 
 logger:
   wandb:

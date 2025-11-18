@@ -1,3 +1,6 @@
+defaults:
+  - criterions: ce
+
 _target_: ml_core.models.base_module.BaseLitModule
 
 forward_fn:
@@ -13,7 +16,7 @@ forward_fn:
       output_size: 10
     mapping:
       x: image
-    new_key: output
+    new_key: logits
   argmax:
     _target_: ml_core.transforms.base.WrapTransform
     transform:
@@ -21,19 +24,17 @@ forward_fn:
       _partial_: true
       dim: -1
     mapping:
-      input: output
+      input: logits
     new_key: prediction
 
 criterions:
   _target_: ml_core.models.utils.CriterionsComposition
-  criterions:
-    ce:
-      _target_: torch.nn.CrossEntropyLoss
+
   weights:
     ce: 1.0
+
   mapping:
     ce:
-      input: output
       target: label
 
 optimizer:
