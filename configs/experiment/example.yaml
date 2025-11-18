@@ -47,8 +47,8 @@ callbacks:
           num_classes: 10
       mapping:
         accuracy:
-          prediction: preds
-          label: target
+          preds: prediction
+          target: label
 
 logger:
   wandb:
