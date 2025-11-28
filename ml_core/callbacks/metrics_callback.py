@@ -10,22 +10,31 @@ class MetricsCallback(Callback):
     This callback creates metric collections for each stage and attaches them to the
     LightningModule, then updates and logs them during training. Metrics are kept as module
     attributes to follow Lightning's expected pattern.
+
+    Supports two computation modes:
+    - Batch-end: Metrics computed after each batch (default)
+    - Stage-end: Metrics computed at the end of validation/test using generated samples
     """
 
     def __init__(
         self,
         metrics: Mapping[str, Metric] | None = None,
         mapping: Mapping[str, Mapping[str, str]] | None = None,
+        compute_on_batch_end: Mapping[str, bool] | None = None,
     ) -> None:
         """Initialize the metrics callback.
 
         :param metrics: Mapping from metric name to Metric instances to track.
         :param mapping: Optional mapping defining how to pull inputs from batch for each metric.
             For each metric name, maps metric argument names to batch keys.
+        :param compute_on_batch_end: Optional mapping from metric name to bool indicating whether
+            to compute the metric after each batch (True, default) or at stage end (False). Stage-
+            end metrics use generated samples from trainer._generations.
         """
         super().__init__()
         self.metrics = metrics
         self.mapping = mapping or {}
+        self.compute_on_batch_end = compute_on_batch_end or {}
 
     def setup(self, trainer: Trainer, pl_module: LightningModule, stage: str) -> None:
         """Create and attach metric collections to the module before training starts.
@@ -42,17 +51,23 @@ class MetricsCallback(Callback):
             pl_module.val_metrics = MetricCollection(metrics_dict, prefix="val/")
             pl_module.test_metrics = MetricCollection(metrics_dict, prefix="test/")
 
-    def _on_stage_batch_end(
+    def _calculate_metrics(
         self,
+        trainer: Trainer,
         stage: Literal["train", "val", "test"],
         pl_module: LightningModule,
         outputs: dict[str, Any],
+        computing_on_batch_end: bool,
     ) -> None:
-        """Update and log metrics for a given stage after each batch.
+        """Calculate and log metrics for a given stage.
 
+        :param trainer: The Lightning trainer.
         :param stage: Current stage (train, val, or test).
         :param pl_module: The Lightning module.
-        :param outputs: Outputs from the step (includes the augmented batch).
+        :param outputs: Outputs from the step or generated samples from trainer._generations.
+        :param computing_on_batch_end: If True, only compute metrics with
+            compute_on_batch_end=True. If False, only compute metrics with
+            compute_on_batch_end=False.
         """
         metrics_attr = f"{stage}_metrics"
         if hasattr(pl_module, metrics_attr):
@@ -61,6 +76,14 @@ class MetricsCallback(Callback):
             for metric_name in metrics.keys():
                 # Remove the stage prefix to get the original metric name for mapping lookup
                 original_metric_name = metric_name.replace(f"{stage}/", "")
+
+                # Check if this metric should be computed at this time
+                should_compute_on_batch_end = self.compute_on_batch_end.get(
+                    original_metric_name, True
+                )
+                if should_compute_on_batch_end != computing_on_batch_end:
+                    continue
+
                 if original_metric_name in self.mapping:
                     # Remap batch keys to metric arguments
                     input_batch = {
@@ -97,7 +120,7 @@ class MetricsCallback(Callback):
         :param batch: The current batch.
         :param batch_idx: Index of the current batch.
         """
-        self._on_stage_batch_end("train", pl_module, outputs)
+        self._calculate_metrics(trainer, "train", pl_module, outputs, computing_on_batch_end=True)
 
     def on_validation_batch_end(
         self,
@@ -117,7 +140,7 @@ class MetricsCallback(Callback):
         :param batch_idx: Index of the current batch.
         :param dataloader_idx: Index of the current dataloader.
         """
-        self._on_stage_batch_end("val", pl_module, outputs)
+        self._calculate_metrics(trainer, "val", pl_module, outputs, computing_on_batch_end=True)
 
     def on_test_batch_end(
         self,
@@ -137,4 +160,28 @@ class MetricsCallback(Callback):
         :param batch_idx: Index of the current batch.
         :param dataloader_idx: Index of the current dataloader.
         """
-        self._on_stage_batch_end("test", pl_module, outputs)
+        self._calculate_metrics(trainer, "test", pl_module, outputs, computing_on_batch_end=True)
+
+    def on_validation_epoch_end(self, trainer: Trainer, pl_module: LightningModule) -> None:
+        """Compute stage-end metrics at the end of validation using generated samples.
+
+        :param trainer: The Lightning trainer.
+        :param pl_module: The Lightning module.
+        """
+        # Get generated samples from trainer if available
+        if hasattr(trainer, "_generations"):
+            self._calculate_metrics(
+                trainer, "val", pl_module, trainer._generations, computing_on_batch_end=False
+            )
+
+    def on_test_epoch_end(self, trainer: Trainer, pl_module: LightningModule) -> None:
+        """Compute stage-end metrics at the end of test using generated samples.
+
+        :param trainer: The Lightning trainer.
+        :param pl_module: The Lightning module.
+        """
+        # Get generated samples from trainer if available
+        if hasattr(trainer, "_generations"):
+            self._calculate_metrics(
+                trainer, "test", pl_module, trainer._generations, computing_on_batch_end=False
+            )

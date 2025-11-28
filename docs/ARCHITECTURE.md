@@ -183,16 +183,36 @@ A PyTorch Lightning callback that manages metrics computation and logging for tr
 - Supports flexible input remapping from batch keys to metric arguments
 - Metrics are kept as module attributes to follow Lightning's expected pattern
 - Leverages Hydra defaults for reusable metric configurations
+- Supports both batch-end and stage-end metric computation modes
 
 **Key Parameters:**
 
 - `metrics`: Mapping from metric name to `Metric` instances to track
 - `mapping`: Optional mapping defining how to pull inputs from batch for each metric (maps metric argument names to batch keys)
+- `compute_on_batch_end`: Optional mapping from metric name to bool indicating when to compute:
+  - `True` (default): Compute after each batch
+  - `False`: Compute at stage end using generated samples from `trainer._generations`
 
 **Workflow:**
 
 1. In `setup()`, creates and attaches metric collections to the module
-2. In `on_*_batch_end()`, remaps batch fields and updates metrics for each stage
+2. In `on_*_batch_end()`, remaps batch fields and updates batch-end metrics
+3. In `on_validation_epoch_end()` and `on_test_epoch_end()`, computes stage-end metrics using generated samples
+
+**Computation Modes:**
+
+**Batch-End Metrics (Default):**
+
+- Computed after each batch during training/validation/test
+- Suitable for most metrics (accuracy, loss, F1, etc.)
+- Uses outputs from the model step
+
+**Stage-End Metrics:**
+
+- Computed once at the end of validation/test stage
+- Suitable for generative metrics (FID, IS, CLIP score, etc.) that require all samples
+- Uses generated samples from `trainer._generations` (populated by generation callback)
+- Not computed during training
 
 **Configuration Patterns:**
 
@@ -240,6 +260,28 @@ callbacks:
       accuracy:
         preds: prediction
         target: label
+```
+
+**Pattern 3: Stage-End Metrics for Generative Models**
+
+For metrics that require all generated samples (e.g., FID, IS):
+
+```yaml
+# In experiment config
+callbacks:
+  metrics_callback:
+    metrics:
+      fid:
+        _target_: torchmetrics.image.fid.FrechetInceptionDistance
+        feature: 2048
+    mapping:
+      fid:
+        images: generated_images  # From trainer._generations
+        real: true
+    compute_on_batch_end:
+      fid: false  # Compute at validation/test end, not per batch
+
+# Note: Requires a generation callback to populate trainer._generations
 ```
 
 #### `BestMetricTrackerCallback`
