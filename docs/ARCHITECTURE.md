@@ -180,34 +180,66 @@ A PyTorch Lightning callback that manages metrics computation and logging for tr
 
 - Creates metric collections for each stage (train/val/test) and attaches them to the LightningModule
 - Updates and logs metrics during training via callback hooks
+- Supports flexible input remapping from batch keys to metric arguments
 - Metrics are kept as module attributes to follow Lightning's expected pattern
+- Leverages Hydra defaults for reusable metric configurations
 
 **Key Parameters:**
 
-- `metrics`: Optional `MetricsComposition` to track across stages
+- `metrics`: Mapping from metric name to `Metric` instances to track
+- `mapping`: Optional mapping defining how to pull inputs from batch for each metric (maps metric argument names to batch keys)
 
 **Workflow:**
 
 1. In `setup()`, creates and attaches metric collections to the module
-2. In `on_*_batch_end()`, updates and logs metrics for each stage
+2. In `on_*_batch_end()`, remaps batch fields and updates metrics for each stage
 
-**Configuration:**
+**Configuration Patterns:**
+
+**Pattern 1: Using Hydra Defaults (Recommended)**
+
+This pattern allows you to define metrics in separate files and reuse them across experiments:
+
+```yaml
+# In experiment config (e.g., configs/experiment/example.yaml)
+defaults:
+  - /metrics@callbacks.metrics_callback: accuracy  # Load from configs/metrics/accuracy.yaml
+
+callbacks:
+  metrics_callback:
+    mapping:  # Can override specific mappings if needed
+      accuracy:
+        target: label  # Override batch key for target argument
+
+# In configs/metrics/accuracy.yaml
+metrics:
+  accuracy:
+    _target_: torchmetrics.Accuracy
+    task: multiclass
+    num_classes: ${params.data.num_classes}
+mapping:
+  accuracy:
+    preds: prediction
+    target: label
+```
+
+**Pattern 2: Inline Definition**
+
+For simple cases or experiment-specific metrics:
 
 ```yaml
 # In experiment config (e.g., configs/experiment/example.yaml)
 callbacks:
   metrics_callback:
     metrics:
-      _target_: ml_core.models.utils.MetricsComposition
-      metrics:
-        accuracy:
-          _target_: torchmetrics.Accuracy
-          task: multiclass
-          num_classes: 10
-      mapping:
-        accuracy:
-          preds: prediction
-          target: label
+      accuracy:
+        _target_: torchmetrics.Accuracy
+        task: multiclass
+        num_classes: 10
+    mapping:
+      accuracy:
+        preds: prediction
+        target: label
 ```
 
 #### `BestMetricTrackerCallback`
@@ -270,26 +302,6 @@ criterions:
       input: output
       target: label
 ```
-
-#### `MetricsComposition`
-
-Extends `torchmetrics.MetricCollection` with per-metric input mapping from batch keys.
-
-```yaml
-metrics:
-  _target_: ml_core.models.utils.MetricsComposition
-  metrics:
-    accuracy:
-      _target_: torchmetrics.Accuracy
-      task: multiclass
-      num_classes: 10
-  mapping:
-    accuracy:
-      preds: prediction
-      target: label
-```
-
-**Note:** `MetricsComposition` is typically configured in experiment configs and passed to `MetricsCallback`, not directly to the model.
 
 ## Configuration System
 
@@ -510,25 +522,34 @@ data:
   batch_size: 64
 
 # Metrics configuration
+# Option 1: Use Hydra defaults to load metrics from separate file (recommended)
+defaults:
+  - /metrics@callbacks.metrics_callback: accuracy
+
 callbacks:
   metrics_callback:
-    metrics:
-      _target_: ml_core.models.utils.MetricsComposition
-      metrics:
-        accuracy:
-          _target_: torchmetrics.Accuracy
-          task: multiclass
-          num_classes: 10
-      mapping:
-        accuracy:
-          preds: prediction
-          target: label
+    mapping:  # Can override specific mappings if needed
+      accuracy:
+        target: label
 
   best_metric_tracker_callback:
     tracked_metric_name: accuracy  # tracks best val/accuracy for model selection
+
+# Option 2: Define metrics inline
+# callbacks:
+#   metrics_callback:
+#     metrics:
+#       accuracy:
+#         _target_: torchmetrics.Accuracy
+#         task: multiclass
+#         num_classes: 10
+#     mapping:
+#       accuracy:
+#         preds: prediction
+#         target: label
 ```
 
-**Note:** Experiment configs are where you specify metrics to track and which metric to use for model selection, allowing you to measure different things for different experiments while reusing the same model architecture.
+**Note:** Experiment configs are where you specify metrics to track and which metric to use for model selection. Using Hydra defaults allows you to reuse metric definitions across experiments while still being able to override specific parameters.
 
 ### 4. Run Training
 
@@ -564,7 +585,8 @@ To run a new experiment:
 3. **Create an experiment config** in `configs/experiment/`
 
    - Combines specific data, model, trainer, and callback settings
-   - Define metrics to track in `callbacks.metrics_callback.metrics`
+   - Use Hydra defaults to load metrics from `configs/metrics/` (recommended) or define inline
+   - Configure input mappings in `callbacks.metrics_callback.mapping`
    - Specify `tracked_metric_name` in `callbacks.best_metric_tracker_callback` for best model selection
    - Version control best hyperparameters
 

@@ -1,8 +1,7 @@
-from typing import Any, Literal
+from typing import Any, Literal, Mapping
 
 from lightning import Callback, LightningModule, Trainer
-
-from ml_core.models.utils import MetricsComposition
+from torchmetrics import Metric, MetricCollection
 
 
 class MetricsCallback(Callback):
@@ -15,14 +14,18 @@ class MetricsCallback(Callback):
 
     def __init__(
         self,
-        metrics: MetricsComposition | None = None,
+        metrics: Mapping[str, Metric] | None = None,
+        mapping: Mapping[str, Mapping[str, str]] | None = None,
     ) -> None:
         """Initialize the metrics callback.
 
-        :param metrics: Optional composition of metrics to track across stages.
+        :param metrics: Mapping from metric name to Metric instances to track.
+        :param mapping: Optional mapping defining how to pull inputs from batch for each metric.
+            For each metric name, maps metric argument names to batch keys.
         """
         super().__init__()
         self.metrics = metrics
+        self.mapping = mapping or {}
 
     def setup(self, trainer: Trainer, pl_module: LightningModule, stage: str) -> None:
         """Create and attach metric collections to the module before training starts.
@@ -33,9 +36,11 @@ class MetricsCallback(Callback):
         """
         # Only create metrics once, and only if they don't already exist
         if self.metrics is not None and not hasattr(pl_module, "train_metrics"):
-            pl_module.train_metrics = self.metrics.clone("train/")
-            pl_module.val_metrics = self.metrics.clone("val/")
-            pl_module.test_metrics = self.metrics.clone("test/")
+            # Convert to plain dict in case it's a DictConfig
+            metrics_dict = dict(self.metrics) if self.metrics else {}
+            pl_module.train_metrics = MetricCollection(metrics_dict, prefix="train/")
+            pl_module.val_metrics = MetricCollection(metrics_dict, prefix="val/")
+            pl_module.test_metrics = MetricCollection(metrics_dict, prefix="test/")
 
     def _on_stage_batch_end(
         self,
@@ -52,8 +57,21 @@ class MetricsCallback(Callback):
         metrics_attr = f"{stage}_metrics"
         if hasattr(pl_module, metrics_attr):
             metrics = getattr(pl_module, metrics_attr)
-            metrics(outputs)
+            # Update each metric with remapped inputs from the batch
             for metric_name in metrics.keys():
+                # Remove the stage prefix to get the original metric name for mapping lookup
+                original_metric_name = metric_name.replace(f"{stage}/", "")
+                if original_metric_name in self.mapping:
+                    # Remap batch keys to metric arguments
+                    input_batch = {
+                        kwarg_name: outputs[batch_key]
+                        for kwarg_name, batch_key in self.mapping[original_metric_name].items()
+                    }
+                    metrics[metric_name](**input_batch)
+                else:
+                    # No mapping, pass outputs directly (backward compatibility)
+                    metrics[metric_name](outputs)
+
                 pl_module.log(
                     f"{metric_name}",
                     metrics[metric_name],

@@ -1,5 +1,10 @@
 # Metrics callback for computing and logging metrics during training/validation/testing
+# Configure metrics using Hydra defaults (recommended):
+#   defaults:
+#     - /metrics@callbacks.metrics_callback: accuracy
+# Or define inline in experiment config
 
 metrics_callback:
   _target_: ml_core.callbacks.MetricsCallback
-  metrics: null # metrics composition to track, should be specified in experiment config
+  metrics: null # mapping from metric name to Metric instances, typically loaded via Hydra defaults
+  mapping: null # mapping defining how to pull inputs from batch for each metric
