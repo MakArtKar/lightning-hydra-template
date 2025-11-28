@@ -117,3 +117,11 @@ class BaseLitModule(LightningModule):
                 },
             }
         return {"optimizer": optimizer}
+
+    def on_validation_epoch_start(self) -> None:
+        """Initialize generations dict at start of validation epoch."""
+        self.trainer._generations = {}
+
+    def on_test_epoch_start(self) -> None:
+        """Initialize generations dict at start of test epoch."""
+        self.trainer._generations = {}

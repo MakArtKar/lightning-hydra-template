@@ -36,7 +36,9 @@ class MetricsCallback(Callback):
         self.mapping = mapping or {}
         self.compute_on_batch_end = compute_on_batch_end or {}
 
-        self._has_on_batch_end_false = any(not value for value in compute_on_batch_end.values())
+        self._has_on_batch_end_false = any(
+            not value for value in self.compute_on_batch_end.values()
+        )
 
     def setup(self, trainer: Trainer, pl_module: LightningModule, stage: str) -> None:
         """Create and attach metric collections to the module before training starts.
