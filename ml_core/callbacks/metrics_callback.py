@@ -36,6 +36,8 @@ class MetricsCallback(Callback):
         self.mapping = mapping or {}
         self.compute_on_batch_end = compute_on_batch_end or {}
 
+        self._has_on_batch_end_false = any(not value for value in compute_on_batch_end.values())
+
     def setup(self, trainer: Trainer, pl_module: LightningModule, stage: str) -> None:
         """Create and attach metric collections to the module before training starts.
 
@@ -169,10 +171,11 @@ class MetricsCallback(Callback):
         :param pl_module: The Lightning module.
         """
         # Get generated samples from trainer if available
-        if hasattr(trainer, "_generations"):
-            self._calculate_metrics(
-                trainer, "val", pl_module, trainer._generations, computing_on_batch_end=False
-            )
+        if self._has_on_batch_end_false and not hasattr(trainer, "_generations"):
+            raise ValueError("Generated samples are not available for stage-end metrics")
+        self._calculate_metrics(
+            trainer, "val", pl_module, trainer._generations, computing_on_batch_end=False
+        )
 
     def on_test_epoch_end(self, trainer: Trainer, pl_module: LightningModule) -> None:
         """Compute stage-end metrics at the end of test using generated samples.
@@ -181,7 +184,8 @@ class MetricsCallback(Callback):
         :param pl_module: The Lightning module.
         """
         # Get generated samples from trainer if available
-        if hasattr(trainer, "_generations"):
-            self._calculate_metrics(
-                trainer, "test", pl_module, trainer._generations, computing_on_batch_end=False
-            )
+        if self._has_on_batch_end_false and not hasattr(trainer, "_generations"):
+            raise ValueError("Generated samples are not available for stage-end metrics")
+        self._calculate_metrics(
+            trainer, "test", pl_module, trainer._generations, computing_on_batch_end=False
+        )
