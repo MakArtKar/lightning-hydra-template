@@ -129,7 +129,7 @@ A generic `LightningModule` that wires together:
 2. `model_step()` computes and logs losses for train/val/test
 3. Logs all losses with `sync_dist=True` for DDP
 
-**Note:** Metrics are handled by `MetricsCallback` (see Callbacks section below).
+**Note:** Metrics are handled by `MetricsCallback`, and best metric tracking is handled by `BestMetricTrackerCallback` (see Callbacks section below).
 
 ### 4. Transforms
 
@@ -180,20 +180,16 @@ A PyTorch Lightning callback that manages metrics computation and logging for tr
 
 - Creates metric collections for each stage (train/val/test) and attaches them to the LightningModule
 - Updates and logs metrics during training via callback hooks
-- Tracks the best validation metric for model selection
 - Metrics are kept as module attributes to follow Lightning's expected pattern
 
 **Key Parameters:**
 
 - `metrics`: Optional `MetricsComposition` to track across stages
-- `tracked_metric_name`: Metric key (without stage prefix) used to track the best value on validation; if None, tracks validation loss
 
 **Workflow:**
 
-1. In `setup()`, creates and attaches metric collections and best metric tracker to the module
-2. In `on_train_start()`, resets validation metrics and best metric tracker
-3. In `on_*_batch_end()`, updates and logs metrics for each stage
-4. In `on_validation_epoch_end()`, computes and logs the best validation metric
+1. In `setup()`, creates and attaches metric collections to the module
+2. In `on_*_batch_end()`, updates and logs metrics for each stage
 
 **Configuration:**
 
@@ -201,7 +197,6 @@ A PyTorch Lightning callback that manages metrics computation and logging for tr
 # In experiment config (e.g., configs/experiment/example.yaml)
 callbacks:
   metrics_callback:
-    tracked_metric_name: accuracy
     metrics:
       _target_: ml_core.models.utils.MetricsComposition
       metrics:
@@ -213,6 +208,38 @@ callbacks:
         accuracy:
           preds: prediction
           target: label
+```
+
+#### `BestMetricTrackerCallback`
+
+Location: `ml_core/callbacks/best_metric_tracker_callback.py`
+
+A PyTorch Lightning callback that tracks the best validation metric for model selection, checkpointing, and early stopping.
+
+**Key Features:**
+
+- Monitors a specific validation metric (or validation loss if none specified)
+- Tracks the best value seen during training
+- Logs the best metric as `val/best` which is monitored by ModelCheckpoint and EarlyStopping
+- Uses `MaxMetric` for custom metrics (higher is better) and `MinMetric` for loss (lower is better)
+
+**Key Parameters:**
+
+- `tracked_metric_name`: Metric key (without "val/" prefix) used to track the best value; if None, tracks validation loss
+
+**Workflow:**
+
+1. In `setup()`, creates and attaches best metric tracker to the module
+2. In `on_train_start()`, resets best metric tracker (unless resuming from checkpoint)
+3. In `on_validation_epoch_end()`, updates and logs the best validation metric
+
+**Configuration:**
+
+```yaml
+# In experiment config (e.g., configs/experiment/example.yaml)
+callbacks:
+  best_metric_tracker_callback:
+    tracked_metric_name: accuracy  # tracks val/accuracy
 ```
 
 ### 6. Loss and Metric Compositions
@@ -485,7 +512,6 @@ data:
 # Metrics configuration
 callbacks:
   metrics_callback:
-    tracked_metric_name: accuracy
     metrics:
       _target_: ml_core.models.utils.MetricsComposition
       metrics:
@@ -497,9 +523,12 @@ callbacks:
         accuracy:
           preds: prediction
           target: label
+
+  best_metric_tracker_callback:
+    tracked_metric_name: accuracy  # tracks best val/accuracy for model selection
 ```
 
-**Note:** Experiment configs are where you specify metrics to track, allowing you to measure different things for different experiments while reusing the same model architecture.
+**Note:** Experiment configs are where you specify metrics to track and which metric to use for model selection, allowing you to measure different things for different experiments while reusing the same model architecture.
 
 ### 4. Run Training
 
@@ -535,8 +564,8 @@ To run a new experiment:
 3. **Create an experiment config** in `configs/experiment/`
 
    - Combines specific data, model, trainer, and callback settings
-   - Define metrics to track in `callbacks.metrics_callback`
-   - Specify `tracked_metric_name` for best model selection
+   - Define metrics to track in `callbacks.metrics_callback.metrics`
+   - Specify `tracked_metric_name` in `callbacks.best_metric_tracker_callback` for best model selection
    - Version control best hyperparameters
 
 4. **Run training**
@@ -618,4 +647,4 @@ This architecture provides:
 - ✅ **Debuggability**: Multiple debug presets for development
 - ✅ **Extensibility**: Easy to add new models, losses, metrics, transforms
 - ✅ **Best Practices**: Leverages Lightning's training loop and Hydra's config management
-- ✅ **Separation of Concerns**: Metrics managed via callbacks, distinct from model architecture
+- ✅ **Separation of Concerns**: Metrics computation and best metric tracking managed via separate callbacks, distinct from model architecture

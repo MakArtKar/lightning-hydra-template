@@ -1,0 +1,3 @@
+best_metric_tracker_callback:
+  _target_: ml_core.callbacks.BestMetricTrackerCallback
+  tracked_metric_name: null # metric to track for best model selection, if null tracks validation loss

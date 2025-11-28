@@ -38,12 +38,14 @@ data:
 
 callbacks:
   metrics_callback:
-    tracked_metric_name: accuracy
     metrics:
       _target_: ml_core.models.utils.MetricsComposition
       mapping:
         accuracy:
           target: label
+
+  best_metric_tracker_callback:
+    tracked_metric_name: accuracy
 
 params:
   data:

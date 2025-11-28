@@ -105,7 +105,7 @@ class BaseLitModule(LightningModule):
         optimizer = self.hparams.optimizer(params=self.trainer.model.parameters())
         if self.hparams.scheduler is not None:
             scheduler = self.hparams.scheduler(optimizer=optimizer)
-            # tracked_metric_name is set by MetricsCallback in setup
+            # tracked_metric_name is set by BestMetricTrackerCallback in setup
             tracked_metric_name = getattr(self, "tracked_metric_name", None)
             return {
                 "optimizer": optimizer,
