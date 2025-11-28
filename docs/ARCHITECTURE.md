@@ -129,7 +129,7 @@ A generic `LightningModule` that wires together:
 2. `model_step()` computes and logs losses for train/val/test
 3. Logs all losses with `sync_dist=True` for DDP
 
-**Note:** Metrics are handled by `MetricsCallback` (see Callbacks section below).
+**Note:** Metrics are handled by `MetricsCallback`, and best metric tracking is handled by `BestMetricTrackerCallback` (see Callbacks section below).
 
 ### 4. Transforms
 
@@ -180,39 +180,140 @@ A PyTorch Lightning callback that manages metrics computation and logging for tr
 
 - Creates metric collections for each stage (train/val/test) and attaches them to the LightningModule
 - Updates and logs metrics during training via callback hooks
-- Tracks the best validation metric for model selection
+- Supports flexible input remapping from batch keys to metric arguments
 - Metrics are kept as module attributes to follow Lightning's expected pattern
+- Leverages Hydra defaults for reusable metric configurations
+- Supports both batch-end and stage-end metric computation modes
 
 **Key Parameters:**
 
-- `metrics`: Optional `MetricsComposition` to track across stages
-- `tracked_metric_name`: Metric key (without stage prefix) used to track the best value on validation; if None, tracks validation loss
+- `metrics`: Mapping from metric name to `Metric` instances to track
+- `mapping`: Optional mapping defining how to pull inputs from batch for each metric (maps metric argument names to batch keys)
+- `compute_on_batch_end`: Optional mapping from metric name to bool indicating when to compute:
+  - `True` (default): Compute after each batch
+  - `False`: Compute at stage end using generated samples from `trainer._generations`
 
 **Workflow:**
 
-1. In `setup()`, creates and attaches metric collections and best metric tracker to the module
-2. In `on_train_start()`, resets validation metrics and best metric tracker
-3. In `on_*_batch_end()`, updates and logs metrics for each stage
-4. In `on_validation_epoch_end()`, computes and logs the best validation metric
+1. In `setup()`, creates and attaches metric collections to the module
+2. In `on_*_batch_end()`, remaps batch fields and updates batch-end metrics
+3. In `on_validation_epoch_end()` and `on_test_epoch_end()`, computes stage-end metrics using generated samples
+
+**Computation Modes:**
+
+**Batch-End Metrics (Default):**
+
+- Computed after each batch during training/validation/test
+- Suitable for most metrics (accuracy, loss, F1, etc.)
+- Uses outputs from the model step
+
+**Stage-End Metrics:**
+
+- Computed once at the end of validation/test stage
+- Suitable for generative metrics (FID, IS, CLIP score, etc.) that require all samples
+- Uses generated samples from `trainer._generations` (populated by generation callback)
+- Not computed during training
+
+**Configuration Patterns:**
+
+**Pattern 1: Using Hydra Defaults (Recommended)**
+
+This pattern allows you to define metrics in separate files and reuse them across experiments:
+
+```yaml
+# In experiment config (e.g., configs/experiment/example.yaml)
+defaults:
+  - /metrics@callbacks.metrics_callback: accuracy  # Load from configs/metrics/accuracy.yaml
+
+callbacks:
+  metrics_callback:
+    mapping:  # Can override specific mappings if needed
+      accuracy:
+        target: label  # Override batch key for target argument
+
+# In configs/metrics/accuracy.yaml
+metrics:
+  accuracy:
+    _target_: torchmetrics.Accuracy
+    task: multiclass
+    num_classes: ${params.data.num_classes}
+mapping:
+  accuracy:
+    preds: prediction
+    target: label
+```
+
+**Pattern 2: Inline Definition**
+
+For simple cases or experiment-specific metrics:
+
+```yaml
+# In experiment config (e.g., configs/experiment/example.yaml)
+callbacks:
+  metrics_callback:
+    metrics:
+      accuracy:
+        _target_: torchmetrics.Accuracy
+        task: multiclass
+        num_classes: 10
+    mapping:
+      accuracy:
+        preds: prediction
+        target: label
+```
+
+**Pattern 3: Stage-End Metrics for Generative Models**
+
+For metrics that require all generated samples (e.g., FID, IS):
+
+```yaml
+# In experiment config
+callbacks:
+  metrics_callback:
+    metrics:
+      fid:
+        _target_: torchmetrics.image.fid.FrechetInceptionDistance
+        feature: 2048
+    mapping:
+      fid:
+        images: generated_images  # From trainer._generations
+        real: true
+    compute_on_batch_end:
+      fid: false  # Compute at validation/test end, not per batch
+
+# Note: Requires a generation callback to populate trainer._generations
+```
+
+#### `BestMetricTrackerCallback`
+
+Location: `ml_core/callbacks/best_metric_tracker_callback.py`
+
+A PyTorch Lightning callback that tracks the best validation metric for model selection, checkpointing, and early stopping.
+
+**Key Features:**
+
+- Monitors a specific validation metric (or validation loss if none specified)
+- Tracks the best value seen during training
+- Logs the best metric as `val/best` which is monitored by ModelCheckpoint and EarlyStopping
+- Uses `MaxMetric` for custom metrics (higher is better) and `MinMetric` for loss (lower is better)
+
+**Key Parameters:**
+
+- `tracked_metric_name`: Metric key (without "val/" prefix) used to track the best value; if None, tracks validation loss
+
+**Workflow:**
+
+1. In `setup()`, creates and attaches best metric tracker to the module
+2. In `on_train_start()`, resets best metric tracker (unless resuming from checkpoint)
+3. In `on_validation_epoch_end()`, updates and logs the best validation metric
 
 **Configuration:**
 
 ```yaml
 # In experiment config (e.g., configs/experiment/example.yaml)
 callbacks:
-  metrics_callback:
-    tracked_metric_name: accuracy
-    metrics:
-      _target_: ml_core.models.utils.MetricsComposition
-      metrics:
-        accuracy:
-          _target_: torchmetrics.Accuracy
-          task: multiclass
-          num_classes: 10
-      mapping:
-        accuracy:
-          preds: prediction
-          target: label
+  best_metric_tracker_callback:
+    tracked_metric_name: accuracy  # tracks val/accuracy
 ```
 
 ### 6. Loss and Metric Compositions
@@ -243,26 +344,6 @@ criterions:
       input: output
       target: label
 ```
-
-#### `MetricsComposition`
-
-Extends `torchmetrics.MetricCollection` with per-metric input mapping from batch keys.
-
-```yaml
-metrics:
-  _target_: ml_core.models.utils.MetricsComposition
-  metrics:
-    accuracy:
-      _target_: torchmetrics.Accuracy
-      task: multiclass
-      num_classes: 10
-  mapping:
-    accuracy:
-      preds: prediction
-      target: label
-```
-
-**Note:** `MetricsComposition` is typically configured in experiment configs and passed to `MetricsCallback`, not directly to the model.
 
 ## Configuration System
 
@@ -483,23 +564,34 @@ data:
   batch_size: 64
 
 # Metrics configuration
+# Option 1: Use Hydra defaults to load metrics from separate file (recommended)
+defaults:
+  - /metrics@callbacks.metrics_callback: accuracy
+
 callbacks:
   metrics_callback:
-    tracked_metric_name: accuracy
-    metrics:
-      _target_: ml_core.models.utils.MetricsComposition
-      metrics:
-        accuracy:
-          _target_: torchmetrics.Accuracy
-          task: multiclass
-          num_classes: 10
-      mapping:
-        accuracy:
-          preds: prediction
-          target: label
+    mapping:  # Can override specific mappings if needed
+      accuracy:
+        target: label
+
+  best_metric_tracker_callback:
+    tracked_metric_name: accuracy  # tracks best val/accuracy for model selection
+
+# Option 2: Define metrics inline
+# callbacks:
+#   metrics_callback:
+#     metrics:
+#       accuracy:
+#         _target_: torchmetrics.Accuracy
+#         task: multiclass
+#         num_classes: 10
+#     mapping:
+#       accuracy:
+#         preds: prediction
+#         target: label
 ```
 
-**Note:** Experiment configs are where you specify metrics to track, allowing you to measure different things for different experiments while reusing the same model architecture.
+**Note:** Experiment configs are where you specify metrics to track and which metric to use for model selection. Using Hydra defaults allows you to reuse metric definitions across experiments while still being able to override specific parameters.
 
 ### 4. Run Training
 
@@ -535,8 +627,9 @@ To run a new experiment:
 3. **Create an experiment config** in `configs/experiment/`
 
    - Combines specific data, model, trainer, and callback settings
-   - Define metrics to track in `callbacks.metrics_callback`
-   - Specify `tracked_metric_name` for best model selection
+   - Use Hydra defaults to load metrics from `configs/metrics/` (recommended) or define inline
+   - Configure input mappings in `callbacks.metrics_callback.mapping`
+   - Specify `tracked_metric_name` in `callbacks.best_metric_tracker_callback` for best model selection
    - Version control best hyperparameters
 
 4. **Run training**
@@ -618,4 +711,4 @@ This architecture provides:
 - ✅ **Debuggability**: Multiple debug presets for development
 - ✅ **Extensibility**: Easy to add new models, losses, metrics, transforms
 - ✅ **Best Practices**: Leverages Lightning's training loop and Hydra's config management
-- ✅ **Separation of Concerns**: Metrics managed via callbacks, distinct from model architecture
+- ✅ **Separation of Concerns**: Metrics computation and best metric tracking managed via separate callbacks, distinct from model architecture

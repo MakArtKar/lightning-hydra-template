@@ -48,27 +48,3 @@ class CriterionsComposition(nn.Module):
     def keys(self) -> list[str]:
         """Return criterion names for which individual losses are computed."""
         return list(self.criterions.keys())
-
-
-class MetricsComposition(MetricCollection):
-    """Wrap a MetricCollection with batch-field remapping per metric entry."""
-
-    def __init__(
-        self,
-        metrics: Mapping[str, Metric],
-        mapping: Mapping[str, Mapping[str, str]],
-    ):
-        """Initialize with metrics and how to pull their inputs from batch."""
-        super().__init__(dict(metrics))
-        self.mapping = mapping
-
-    def forward(self, batch) -> dict[str, Any]:
-        """Evaluate metrics using remapped fields and return their values."""
-        result = {}
-        for name in self._modules.keys():
-            input_batch = {
-                kwarg_name: batch[batch_key]
-                for kwarg_name, batch_key in self.mapping[name].items()
-            }
-            result[name] = self._modules[name](**input_batch)
-        return result
