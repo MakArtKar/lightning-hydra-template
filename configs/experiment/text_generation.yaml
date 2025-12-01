@@ -4,7 +4,7 @@
 # python train.py experiment=text_generation
 
 defaults:
-  # - /metrics@callbacks.metrics_callback: accuracy
+  - /metrics@callbacks.metrics_callback: accuracy
   - /model/criterions: ce
   - override /data: hf_dataset
   - override /model: base
@@ -85,6 +85,16 @@ model:
         input: logits
       new_key: transposed_logits
 
+    argmax_logits:
+      _target_: ml_core.transforms.base.WrapTransform
+      transform:
+        _target_: torch.argmax
+        _partial_: true
+        dim: -1
+      mapping:
+        input: logits
+      new_key: prediction
+
   criterions:
     _target_: ml_core.models.utils.CriterionsComposition
 
@@ -93,14 +103,14 @@ model:
         input: transposed_logits
         target: input_ids
 
-# callbacks:
-#   metrics_callback:
-#     mapping:
-#       accuracy:
-#         target: label
+callbacks:
+  metrics_callback:
+    mapping:
+      accuracy:
+        target: input_ids
 
-#   best_metric_tracker_callback:
-#     tracked_metric_name: accuracy
+  best_metric_tracker_callback:
+    tracked_metric_name: # tracking val/total loss
 
 params:
   data:
@@ -118,6 +128,8 @@ params:
       _args_:
         - ${params.data.tokenizer}
         - vocab_size
+
+    num_classes: ${params.data.vocab_size}
 
     max_len: 256
 

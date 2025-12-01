@@ -102,8 +102,8 @@ class MetricsCallback(Callback):
                 pl_module.log(
                     f"{metric_name}",
                     metrics[metric_name],
-                    on_step=False,
-                    on_epoch=True,
+                    on_step=stage == "train",
+                    on_epoch=stage != "train",
                     prog_bar=True,
                     sync_dist=True,
                 )

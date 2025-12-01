@@ -75,8 +75,8 @@ class BaseLitModule(LightningModule):
             self.log(
                 f"{stage}/{criterion_name}",
                 loss[criterion_name],
-                on_step=False,
-                on_epoch=True,
+                on_step=stage == "train",
+                on_epoch=stage != "train",
                 prog_bar=True,
                 sync_dist=True,
             )
