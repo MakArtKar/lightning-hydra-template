@@ -1,0 +1,130 @@
+# @package _global_
+
+# to execute this experiment run:
+# python train.py experiment=text_generation
+
+defaults:
+  # - /metrics@callbacks.metrics_callback: accuracy
+  - /model/criterions: ce
+  - override /data: hf_dataset
+  - override /model: base
+  - override /callbacks: default
+  - override /trainer: default
+
+# all parameters below will be merged with parameters from default configurations set above
+# this allows you to overwrite only specified parameters
+
+tags:
+  - text_generation
+  - ${params.data.dataset.path}
+
+seed: 12345
+
+trainer:
+  min_epochs: 1
+  max_epochs: 2
+
+data:
+  batch_size: 64
+
+  transform:
+    _target_: ml_core.transforms.base.ComposeTransform
+    tokenizer:
+      _target_: ml_core.transforms.base.WrapTransform
+      transform: ${params.data.tokenizer}
+      mapping:
+        text: text
+      transform_kwargs:
+        padding: max_length
+        truncation: true
+        max_length: ${params.data.max_len}
+        return_tensors: pt
+
+    convert_mask_to_bool:
+      _target_: ml_core.transforms.base.WrapTransform
+      transform:
+        _target_: torch.as_tensor
+        _partial_: true
+        dtype:
+          _target_: hydra.utils.get_object
+          _args_:
+            - torch.bool
+      mapping:
+        data: attention_mask
+      new_key: attention_mask
+
+model:
+  forward_fn:
+    _target_: ml_core.transforms.base.ComposeTransform
+    network:
+      _target_: ml_core.transforms.base.WrapTransform
+      transform:
+        _target_: x_transformers.TransformerWrapper
+        num_tokens: ${params.data.vocab_size}
+        max_seq_len: ${params.data.max_len}
+        attn_layers:
+          _target_: x_transformers.Decoder
+          dim: 512
+          depth: 6
+          heads: 8
+
+      mapping:
+        x: input_ids
+        mask: attention_mask
+
+      new_key: logits
+
+    transpose_logits:
+      _target_: ml_core.transforms.base.WrapTransform
+      transform:
+        _target_: torch.transpose
+        _partial_: true
+        dim0: -1
+        dim1: -2
+      mapping:
+        input: logits
+      new_key: transposed_logits
+
+  criterions:
+    _target_: ml_core.models.utils.CriterionsComposition
+
+    mapping:
+      ce:
+        input: transposed_logits
+        target: input_ids
+
+# callbacks:
+#   metrics_callback:
+#     mapping:
+#       accuracy:
+#         target: label
+
+#   best_metric_tracker_callback:
+#     tracked_metric_name: accuracy
+
+params:
+  data:
+    dataset:
+      path: wikitext
+      name: wikitext-2-v1
+
+    tokenizer:
+      _target_: transformers.AutoTokenizer.from_pretrained
+      pretrained_model_name_or_path: openai-community/gpt2
+      pad_token: "<|endoftext|>"
+
+    vocab_size:
+      _target_: builtins.getattr
+      _args_:
+        - ${params.data.tokenizer}
+        - vocab_size
+
+    max_len: 256
+
+logger:
+  wandb:
+    tags: ${tags}
+    group: text_generation
+    name: text_generation-${params.data.dataset.path}
+  aim:
+    experiment: text_generation

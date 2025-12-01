@@ -10,7 +10,7 @@ hydra-colorlog==1.2.0
 hydra-optuna-sweeper==1.2.0
 
 # --------- loggers --------- #
-# wandb
+wandb
 # neptune-client
 # mlflow
 # comet-ml
@@ -26,3 +26,4 @@ interrogate         # docs coverage
 sh                  # for running bash commands in some tests (linux/macos only)
 datasets==3.6.0     # for loading and processing datasets
 transformers
+x-transformers
