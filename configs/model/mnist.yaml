@@ -7,13 +7,7 @@ forward_fn:
   _target_: ml_core.transforms.base.ComposeTransform
   network:
     _target_: ml_core.transforms.base.WrapTransform
-    transform:
-      _target_: ml_core.models.components.simple_dense_net.SimpleDenseNet
-      input_size: 784
-      lin1_size: 64
-      lin2_size: 128
-      lin3_size: 64
-      output_size: 10
+    transform: ${params.instances.network}
     mapping:
       x: image
     new_key: logits

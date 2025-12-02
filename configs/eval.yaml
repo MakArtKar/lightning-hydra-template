@@ -16,6 +16,9 @@ defaults:
 
 task_name: "eval"
 
+params:
+  instances: null
+
 tags: ["dev"]
 
 # passing checkpoint path is necessary for evaluation
