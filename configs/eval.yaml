@@ -11,6 +11,7 @@ defaults:
   - extras: default
   - hydra: default
 
+  - task: null
   # experiment configs allow for version control of specific hyperparameters
   - experiment: null
 

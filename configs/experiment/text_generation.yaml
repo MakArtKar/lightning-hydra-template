@@ -6,6 +6,7 @@
 defaults:
   - /metrics@callbacks.metrics_callback: accuracy
   - /model/criterions: ce
+  - /task/text: base
   - override /data: hf_dataset
   - override /model: base
   - override /callbacks: default
@@ -26,32 +27,6 @@ trainer:
 
 data:
   batch_size: 64
-
-  transform:
-    _target_: ml_core.transforms.base.ComposeTransform
-    tokenizer:
-      _target_: ml_core.transforms.base.WrapTransform
-      transform: ${params.data.tokenizer}
-      mapping:
-        text: text
-      transform_kwargs:
-        padding: max_length
-        truncation: true
-        max_length: ${params.data.max_len}
-        return_tensors: pt
-
-    convert_mask_to_bool:
-      _target_: ml_core.transforms.base.WrapTransform
-      transform:
-        _target_: torch.as_tensor
-        _partial_: true
-        dtype:
-          _target_: hydra.utils.get_object
-          _args_:
-            - torch.bool
-      mapping:
-        data: attention_mask
-      new_key: attention_mask
 
 model:
   forward_fn:

@@ -1,0 +1,9 @@
+_target_: ml_core.transforms.base.WrapTransform
+transform: ${params.data.tokenizer}
+mapping:
+  text: text
+transform_kwargs:
+  padding: max_length
+  truncation: true
+  max_length: ${params.data.max_len}
+  return_tensors: pt

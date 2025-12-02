@@ -1,0 +1,11 @@
+_target_: ml_core.transforms.base.WrapTransform
+transform:
+  _target_: torch.as_tensor
+  _partial_: true
+  dtype:
+    _target_: hydra.utils.get_object
+    _args_:
+      - torch.bool
+mapping:
+  data: attention_mask
+new_key: attention_mask
