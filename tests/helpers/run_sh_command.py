@@ -14,10 +14,14 @@ def run_sh_command(command: List[str]) -> None:
 
     :param command: A list of shell commands as strings.
     """
-    msg = None
     try:
-        sh.python(*command, _out=sys.stdout, _err=sys.stderr)
+        # Use sys.executable to ensure we use the same Python interpreter as the test runner
+        sh.Command(sys.executable)(*command, _out=sys.stdout, _err=sys.stderr)
     except sh.ErrorReturnCode as e:
-        msg = e.stderr.decode()
-    if msg:
-        pytest.fail(reason=msg)
+        # Always fail on non-zero exit code
+        # Note: stderr might be empty if it was redirected to sys.stderr
+        msg = e.stderr.decode().strip()
+        if msg:
+            pytest.fail(reason=msg)
+        else:
+            pytest.fail(reason=f"Command failed with exit code {e.exit_code}")
