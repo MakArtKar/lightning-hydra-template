@@ -67,7 +67,7 @@ params:
     num_classes: ${params.data.vocab_size}
 
     max_len: 256
-  
+
   model:
     network:
       hidden_size: 512
