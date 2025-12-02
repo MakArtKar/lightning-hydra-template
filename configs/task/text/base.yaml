@@ -3,3 +3,7 @@
 defaults:
   - /transform/text@data.transform.tokenizer: tokenizer
   - /transform/utils@data.transform.convert_mask_to_bool: convert_mask_to_bool
+
+data:
+  transform:
+    _target_: ml_core.transforms.base.ComposeTransform

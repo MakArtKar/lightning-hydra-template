@@ -7,6 +7,7 @@ defaults:
   - /metrics@callbacks.metrics_callback: accuracy
   - /model/criterions: ce
   - /task/text: base
+  - /model/forward_fn: ar
   - override /data: hf_dataset
   - override /model: base
   - override /callbacks: default
@@ -29,47 +30,6 @@ data:
   batch_size: 64
 
 model:
-  forward_fn:
-    _target_: ml_core.transforms.base.ComposeTransform
-    network:
-      _target_: ml_core.transforms.base.WrapTransform
-      transform:
-        _target_: x_transformers.TransformerWrapper
-        num_tokens: ${params.data.vocab_size}
-        max_seq_len: ${params.data.max_len}
-        attn_layers:
-          _target_: x_transformers.Decoder
-          dim: 512
-          depth: 6
-          heads: 8
-
-      mapping:
-        x: input_ids
-        mask: attention_mask
-
-      new_key: logits
-
-    transpose_logits:
-      _target_: ml_core.transforms.base.WrapTransform
-      transform:
-        _target_: torch.transpose
-        _partial_: true
-        dim0: -1
-        dim1: -2
-      mapping:
-        input: logits
-      new_key: transposed_logits
-
-    argmax_logits:
-      _target_: ml_core.transforms.base.WrapTransform
-      transform:
-        _target_: torch.argmax
-        _partial_: true
-        dim: -1
-      mapping:
-        input: logits
-      new_key: prediction
-
   criterions:
     _target_: ml_core.models.utils.CriterionsComposition
 
@@ -107,6 +67,12 @@ params:
     num_classes: ${params.data.vocab_size}
 
     max_len: 256
+  
+  model:
+    network:
+      hidden_size: 512
+      num_layers: 6
+      num_heads: 8
 
 logger:
   wandb:

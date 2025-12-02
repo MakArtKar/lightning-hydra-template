@@ -1,0 +1,16 @@
+_target_: ml_core.transforms.base.WrapTransform
+transform:
+  _target_: x_transformers.TransformerWrapper
+  num_tokens: ${params.data.vocab_size}
+  max_seq_len: ${params.data.max_len}
+  attn_layers:
+    _target_: x_transformers.Decoder
+    dim: ${params.model.network.hidden_size}
+    depth: ${params.model.network.num_layers}
+    heads: ${params.model.network.num_heads}
+
+mapping:
+  x: input_ids
+  mask: attention_mask
+
+new_key: logits

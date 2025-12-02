@@ -1,0 +1,6 @@
+defaults:
+  - /transform/network@network: decoder
+  - /transform/utils@transpose_logits: transpose_logits
+  - /transform/utils@argmax: argmax
+
+_target_: ml_core.transforms.base.ComposeTransform

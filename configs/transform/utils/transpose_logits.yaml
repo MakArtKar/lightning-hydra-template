@@ -1,0 +1,9 @@
+_target_: ml_core.transforms.base.WrapTransform
+transform:
+  _target_: torch.transpose
+  _partial_: true
+  dim0: -1
+  dim1: -2
+mapping:
+  input: logits
+new_key: transposed_logits
