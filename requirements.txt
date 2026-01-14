@@ -24,5 +24,5 @@ pytest              # tests
 pytest-cov          # tests coverage
 interrogate         # docs coverage
 sh                  # for running bash commands in some tests (linux/macos only)
-datasets==3.6.0     # for loading and processing datasets
+datasets==4.5.0     # for loading and processing datasets
 transformers
